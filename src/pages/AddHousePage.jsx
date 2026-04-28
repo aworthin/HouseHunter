@@ -48,10 +48,19 @@ export default function AddHousePage() {
         body: JSON.stringify({ url: form.zillowUrl })
       })
       const data = await res.json()
-      if (data.error) throw new Error(data.error)
-      setForm(f => ({ ...f, ...data }))
-      setScrapeStatus('success')
-      setScrapeMsg(`Found: ${data.address || 'listing details loaded'}`)
+
+      if (data._partial) {
+        if (data.address) setForm(f => ({ ...f, address: data.address }))
+        setScrapeStatus('partial')
+        setScrapeMsg('Zillow blocked the data pull — address pre-filled from URL. Please fill in the remaining details manually.')
+      } else if (data.error) {
+        setScrapeStatus('error')
+        setScrapeMsg('Could not pull data from Zillow — please fill in details manually below.')
+      } else {
+        setForm(f => ({ ...f, ...data }))
+        setScrapeStatus('success')
+        setScrapeMsg(`Found: ${data.address || 'listing details loaded'}`)
+      }
     } catch (err) {
       setScrapeStatus('error')
       setScrapeMsg('Could not pull data from Zillow — please fill in details manually below.')
@@ -135,6 +144,8 @@ export default function AddHousePage() {
             <div className={`flex items-start gap-2 p-3 rounded-xl text-sm ${
               scrapeStatus === 'success'
                 ? 'bg-green-950/50 text-green-400 border border-green-900'
+                : scrapeStatus === 'partial'
+                ? 'bg-amber-950/50 text-amber-400 border border-amber-900'
                 : 'bg-red-950/50 text-red-400 border border-red-900'
             }`}>
               {scrapeStatus === 'success' ? <CheckCircle size={16} className="shrink-0 mt-0.5" /> : <AlertCircle size={16} className="shrink-0 mt-0.5" />}

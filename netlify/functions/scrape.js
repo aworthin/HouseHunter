@@ -13,18 +13,55 @@ export const handler = async (event) => {
 
   console.log('Scraping:', url)
 
+  // Try to extract address from URL as a fallback
+  // Zillow URLs look like: /homedetails/123-Main-St-City-State-ZIP/zpid_zpid
+  const addressFromUrl = extractAddressFromUrl(url)
+
   try {
     const data = await scrapeZillow(url)
-    console.log('Success:', data.address)
-    return { statusCode: 200, headers: { ...corsHeaders(), 'Content-Type': 'application/json' }, body: JSON.stringify(data) }
+    console.log('Scrape success:', data.address)
+    return {
+      statusCode: 200,
+      headers: { ...corsHeaders(), 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    }
   } catch (err) {
-    console.error('Failed:', err.message)
-    return { statusCode: 200, headers: { ...corsHeaders(), 'Content-Type': 'application/json' }, body: JSON.stringify({ error: err.message }) }
+    console.error('Scrape failed:', err.message)
+    // Return partial data with address from URL so user isn't left with nothing
+    return {
+      statusCode: 200,
+      headers: { ...corsHeaders(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        error: err.message,
+        address: addressFromUrl,
+        _partial: true
+      })
+    }
   }
 }
 
 function corsHeaders() {
-  return { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'Content-Type', 'Access-Control-Allow-Methods': 'POST, OPTIONS' }
+  return {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS'
+  }
+}
+
+function extractAddressFromUrl(url) {
+  try {
+    // e.g. https://www.zillow.com/homedetails/8-Epping-Dr-Bella-Vista-AR-72714/454312345_zpid/
+    const match = url.match(/homedetails\/([^/]+)\//)
+    if (!match) return ''
+    return match[1]
+      .replace(/-(\d{5})(-\d+)?$/, ', $1') // ZIP at end
+      .replace(/-([A-Z]{2})-/, ', $1 ')    // State abbreviation
+      .replace(/-/g, ' ')                   // Remaining dashes to spaces
+      .replace(/\s+/g, ' ')
+      .trim()
+  } catch {
+    return ''
+  }
 }
 
 async function scrapeZillow(url) {
@@ -55,7 +92,10 @@ async function scrapeZillow(url) {
         redirect: 'follow',
       })
       console.log('Status:', response.status, '| UA:', ua.substring(0, 50))
-      if (response.status === 200) { html = await response.text(); break }
+      if (response.status === 200) {
+        html = await response.text()
+        break
+      }
       lastError = `HTTP ${response.status}`
     } catch (err) {
       lastError = err.message
@@ -65,8 +105,8 @@ async function scrapeZillow(url) {
   if (!html) throw new Error(lastError || 'All fetch attempts failed')
   console.log('HTML length:', html.length)
 
-  if (html.length < 5000 || html.includes('"captcha"')) {
-    throw new Error('Zillow is showing a bot-detection page — try again in a moment')
+  if (html.length < 5000 || html.includes('"captcha"') || html.includes('captcha-container')) {
+    throw new Error('Zillow is showing a bot-detection page')
   }
 
   const nextDataMatch = html.match(/<script id="__NEXT_DATA__" type="application\/json">([\s\S]*?)<\/script>/)
@@ -111,7 +151,9 @@ function parseZillowData(nextData) {
     sqft: property.livingArea ? Number(property.livingArea).toLocaleString() : '',
     lotSize: property.lotAreaValue ? `${property.lotAreaValue} ${property.lotAreaUnit || 'sqft'}` : '',
     yearBuilt: property.yearBuilt?.toString() || '',
-    propertyType: (property.propertyTypeDimension || property.homeType || '').replace(/_/g, ' ').replace(/\w\S*/g, w => w.charAt(0).toUpperCase() + w.substr(1).toLowerCase()),
+    propertyType: (property.propertyTypeDimension || property.homeType || '')
+      .replace(/_/g, ' ')
+      .replace(/\w\S*/g, w => w.charAt(0).toUpperCase() + w.substr(1).toLowerCase()),
     description: property.description || '',
     imageUrls,
   }
