@@ -3,26 +3,11 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { ArrowLeft, Link2, Loader2, AlertCircle, CheckCircle } from '../icons'
 import { addHouse } from '../lib/db'
 
-// Firebase function (Google Cloud IP - less likely to be blocked)
-// Falls back to Netlify function if Firebase isn't available
-const FIREBASE_SCRAPER = 'https://scrape-ykoka77lva-uc.a.run.app'
-const NETLIFY_SCRAPER = '/api/scrape'
+// Netlify function - uses RapidAPI private-zillow (no IP blocking issues)
+const SCRAPER_URL = '/api/scrape'
 
 async function fetchScrape(url) {
-  // Try Firebase first
-  try {
-    const res = await fetch(FIREBASE_SCRAPER, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ url }),
-      signal: AbortSignal.timeout(20000)
-    })
-    if (res.ok) return res.json()
-  } catch (e) {
-    console.log('Firebase scraper unavailable, trying Netlify:', e.message)
-  }
-  // Fall back to Netlify
-  const res = await fetch(NETLIFY_SCRAPER, {
+  const res = await fetch(SCRAPER_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ url })
@@ -296,7 +281,7 @@ export default function AddHousePage() {
           <div>
             <label className="label">{form.imageUrls.length} images pulled from Zillow</label>
             <div className="flex gap-2 overflow-x-auto gallery-scroll pb-2">
-              {form.imageUrls.slice(0, 6).map((url, i) => (
+              {form.imageUrls.map((url, i) => (
                 <img key={i} src={url} alt="" className="h-20 w-28 object-cover rounded-lg shrink-0" />
               ))}
             </div>
