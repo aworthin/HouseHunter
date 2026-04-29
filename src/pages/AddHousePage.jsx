@@ -5,7 +5,7 @@ import { addHouse } from '../lib/db'
 
 // Firebase function (Google Cloud IP - less likely to be blocked)
 // Falls back to Netlify function if Firebase isn't available
-const FIREBASE_SCRAPER = 'https://us-central1-bw-house-hunter.cloudfunctions.net/scrape'
+const FIREBASE_SCRAPER = 'https://scrape-ykoka77lva-uc.a.run.app'
 const NETLIFY_SCRAPER = '/api/scrape'
 
 async function fetchScrape(url) {
