@@ -139,17 +139,14 @@ async function getPropertyImages(zpid, url) {
 function formatLotSize(prop) {
   const val = prop.lotAreaValue || prop.lotSize;
   if (!val) return "";
+  const num = parseFloat(val);
+  if (!num || num <= 0) return "";  // hide zero/null values
   const unit = prop.lotAreaUnit || "sqft";
-  // Convert to acres if in sqft and > 1000
   if (unit === "sqft" || unit === "squareFeet") {
-    const sqft = parseFloat(val);
-    if (sqft > 1000) {
-      return `${(sqft / 43560).toFixed(2)} acres`;
-    }
-    return `${Math.round(sqft)} sqft`;
+    if (num > 1000) return `${(num / 43560).toFixed(2)} acres`;
+    return `${Math.round(num)} sqft`;
   }
-  // Already in acres - round to 2 decimal places
-  return `${parseFloat(val).toFixed(2)} ${unit}`;
+  return `${num.toFixed(2)} ${unit}`;
 }
 
 function formatProperty(prop, imgData, fallbackAddress) {
