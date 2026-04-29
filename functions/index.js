@@ -3,26 +3,18 @@ const { setGlobalOptions } = require("firebase-functions/v2");
 
 setGlobalOptions({ maxInstances: 10 });
 
+const RAPIDAPI_KEY = "697dd9b3c6msh463d183612ebbf7p1eb708jsn558cc5817d68";
+const RAPIDAPI_HOST = "zillow-property-data-api1.p.rapidapi.com";
+
 exports.scrape = onRequest(
-  { 
-    cors: ["https://bw-house-hunter.netlify.app", "http://localhost:5173", "*"],
-    timeoutSeconds: 30 
-  },
+  { timeoutSeconds: 30 },
   async (req, res) => {
-    // Explicitly set CORS headers on every response
     res.set("Access-Control-Allow-Origin", "*");
     res.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-    res.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
+    res.set("Access-Control-Allow-Headers", "Content-Type");
 
-    if (req.method === "OPTIONS") {
-      res.status(204).send("");
-      return;
-    }
-
-    if (req.method !== "POST") {
-      res.status(405).json({ error: "Method Not Allowed" });
-      return;
-    }
+    if (req.method === "OPTIONS") { res.status(204).send(""); return; }
+    if (req.method !== "POST") { res.status(405).json({ error: "Method Not Allowed" }); return; }
 
     let url = req.body?.url;
     if (!url || !url.includes("zillow.com")) {
@@ -30,36 +22,42 @@ exports.scrape = onRequest(
       return;
     }
 
-    console.log("=== SCRAPE START ===");
-    console.log("Raw URL:", url);
-
-    // Strip UTM tracking params added by iOS share sheet / Zillow app
+    // Strip UTM tracking params
     try {
       const parsed = new URL(url);
       url = `https://www.zillow.com${parsed.pathname}`;
       if (!url.endsWith("/")) url += "/";
-    } catch (e) {
-      console.log("URL parse failed, using as-is:", e.message);
-    }
+    } catch (e) { console.log("URL parse failed:", e.message); }
+
+    console.log("=== SCRAPE START ===");
     console.log("Cleaned URL:", url);
 
+    // Extract address from URL as primary lookup key
     const addressFromUrl = extractAddressFromUrl(url);
+    const zpid = extractZpid(url);
     console.log("Address from URL:", addressFromUrl);
+    console.log("ZPID from URL:", zpid);
 
     try {
-      const data = await scrapeZillow(url);
-      console.log("=== SCRAPE SUCCESS ===");
-      console.log("Address:", data.address);
-      console.log("Images:", data.imageUrls?.length);
+      let data = null;
+
+      // Strategy 1: Search by address (most reliable)
+      if (addressFromUrl) {
+        data = await searchByAddress(addressFromUrl);
+      }
+
+      // Strategy 2: If address search fails, try property images + tax info by zpid
+      if (!data && zpid) {
+        data = await getByZpid(zpid, addressFromUrl);
+      }
+
+      if (!data) throw new Error("Could not find property data");
+
+      console.log("=== SUCCESS ===", data.address);
       res.json(data);
     } catch (err) {
-      console.error("=== SCRAPE FAILED ===");
-      console.error("Error:", err.message);
-      res.json({
-        error: err.message,
-        address: addressFromUrl,
-        _partial: true,
-      });
+      console.error("=== FAILED ===", err.message);
+      res.json({ error: err.message, address: addressFromUrl, _partial: true });
     }
   }
 );
@@ -68,134 +66,170 @@ function extractAddressFromUrl(url) {
   try {
     const match = url.match(/homedetails\/([^/]+)\//);
     if (!match) return "";
-    return match[1]
-      .replace(/-(\d{5})(-\d+)?$/, ", $1")
-      .replace(/-([A-Z]{2})-/, ", $1 ")
+    // Parse: 8-Epping-Dr-Bella-Vista-AR-72714
+    const slug = match[1];
+    // Remove zpid suffix if present
+    const clean = slug.replace(/-\d+_zpid$/, "").replace(/_zpid$/, "");
+    return clean
+      .replace(/-(\d{5})$/, ", $1")       // ZIP
+      .replace(/-([A-Z]{2})-/, ", $1 ")   // State
       .replace(/-/g, " ")
-      .replace(/\s+/g, " ")
       .trim();
-  } catch {
-    return "";
-  }
+  } catch { return ""; }
 }
 
-async function scrapeZillow(url) {
-  const userAgents = [
-    "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1",
-    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
-  ];
+function extractZpid(url) {
+  try {
+    const match = url.match(/\/(\d+)_zpid/);
+    return match ? match[1] : null;
+  } catch { return null; }
+}
 
-  let lastError = null;
+async function searchByAddress(address) {
+  console.log("Searching by address:", address);
+  const encodedAddress = encodeURIComponent(address);
+  const apiUrl = `https://${RAPIDAPI_HOST}/api/zillow/search/byaddress?location=${encodedAddress}&listingStatus=For_Sale&homeType=houses&page=1&sortOrder=Homes_for_you`;
 
-  for (const ua of userAgents) {
-    try {
-      console.log("Trying UA:", ua.substring(0, 60));
-      const response = await fetch(url, {
+  const response = await fetch(apiUrl, {
+    headers: {
+      "Content-Type": "application/json",
+      "x-rapidapi-host": RAPIDAPI_HOST,
+      "x-rapidapi-key": RAPIDAPI_KEY,
+    },
+  });
+
+  console.log("Search response status:", response.status);
+  if (!response.ok) throw new Error(`RapidAPI returned ${response.status}`);
+
+  const json = await response.json();
+  console.log("Search result keys:", Object.keys(json).join(", "));
+
+  // Find the best matching property
+  const listings = json?.searchResults?.listResults || json?.results || json?.data || [];
+  console.log("Listings found:", listings.length);
+
+  if (!listings.length) {
+    // Try without filters for sold/off-market homes
+    return searchByAddressAny(address);
+  }
+
+  const prop = listings[0];
+  return formatProperty(prop);
+}
+
+async function searchByAddressAny(address) {
+  console.log("Retrying search without filters:", address);
+  const encodedAddress = encodeURIComponent(address);
+  const apiUrl = `https://${RAPIDAPI_HOST}/api/zillow/search/byaddress?location=${encodedAddress}&page=1`;
+
+  const response = await fetch(apiUrl, {
+    headers: {
+      "Content-Type": "application/json",
+      "x-rapidapi-host": RAPIDAPI_HOST,
+      "x-rapidapi-key": RAPIDAPI_KEY,
+    },
+  });
+
+  if (!response.ok) throw new Error(`RapidAPI search retry returned ${response.status}`);
+  const json = await response.json();
+  const listings = json?.searchResults?.listResults || json?.results || json?.data || [];
+  console.log("Retry listings found:", listings.length);
+  if (!listings.length) throw new Error("No listings found for this address");
+  return formatProperty(listings[0]);
+}
+
+async function getByZpid(zpid, fallbackAddress) {
+  console.log("Getting images by zpid:", zpid);
+  try {
+    const imgResponse = await fetch(
+      `https://${RAPIDAPI_HOST}/api/zillow/property/images?byzpid=${zpid}`,
+      {
         headers: {
-          "User-Agent": ua,
-          Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
-          "Accept-Language": "en-US,en;q=0.9",
-          "Cache-Control": "no-cache",
-          Pragma: "no-cache",
-          "Sec-Fetch-Dest": "document",
-          "Sec-Fetch-Mode": "navigate",
-          "Sec-Fetch-Site": "none",
-          "Upgrade-Insecure-Requests": "1",
+          "x-rapidapi-host": RAPIDAPI_HOST,
+          "x-rapidapi-key": RAPIDAPI_KEY,
         },
-        redirect: "follow",
-      });
-
-      console.log("HTTP status:", response.status);
-
-      if (response.status === 403) { lastError = "Zillow returned 403 Forbidden (IP blocked)"; continue; }
-      if (response.status === 429) { lastError = "Zillow returned 429 Too Many Requests"; continue; }
-      if (response.status !== 200) { lastError = `Zillow returned HTTP ${response.status}`; continue; }
-
-      const html = await response.text();
-      console.log("HTML length:", html.length);
-      console.log("Has __NEXT_DATA__:", html.includes("__NEXT_DATA__"));
-      console.log("Has captcha:", html.includes("captcha"));
-
-      if (html.length < 5000) { lastError = `Page too short (${html.length} chars)`; continue; }
-      if (html.includes("captcha") || html.includes("cf-challenge")) { lastError = "Bot detection page"; continue; }
-      if (!html.includes("__NEXT_DATA__")) {
-        const titleMatch = html.match(/<title>(.*?)<\/title>/);
-        console.log("Page title:", titleMatch?.[1] || "no title");
-        lastError = "No __NEXT_DATA__ found";
-        continue;
       }
-
-      return parseZillowHtml(html);
-    } catch (err) {
-      console.error("Fetch error:", err.message);
-      lastError = err.message;
-    }
+    );
+    const imgData = imgResponse.ok ? await imgResponse.json() : {};
+    const imageUrls = extractImagesFromResponse(imgData);
+    return {
+      address: fallbackAddress,
+      imageUrls,
+      price: "", beds: "", baths: "", sqft: "",
+      lotSize: "", yearBuilt: "", propertyType: "", description: "",
+    };
+  } catch (e) {
+    console.log("ZPID fetch failed:", e.message);
+    return null;
   }
-
-  throw new Error(lastError || "All fetch attempts failed");
 }
 
-function parseZillowHtml(html) {
-  const nextDataMatch = html.match(/<script id="__NEXT_DATA__" type="application\/json">([\s\S]*?)<\/script>/);
-  if (!nextDataMatch) throw new Error("Could not extract __NEXT_DATA__");
+function formatProperty(prop) {
+  if (!prop) return null;
+  console.log("Property keys:", Object.keys(prop).slice(0, 15).join(", "));
 
-  const nextData = JSON.parse(nextDataMatch[1]);
-  const props = nextData?.props?.pageProps;
-  console.log("pageProps keys:", Object.keys(props || {}).join(", "));
+  // Extract images from various possible locations
+  const imageUrls = extractImagesFromProperty(prop);
 
-  let property = null;
+  // Price
+  let price = "";
+  if (prop.price?.value) price = `$${Number(prop.price.value).toLocaleString()}`;
+  else if (prop.unformattedPrice) price = `$${Number(prop.unformattedPrice).toLocaleString()}`;
+  else if (prop.price && typeof prop.price === "number") price = `$${Number(prop.price).toLocaleString()}`;
+  else if (prop.listPrice) price = `$${Number(prop.listPrice).toLocaleString()}`;
 
-  const gdpClientCache = props?.componentProps?.gdpClientCache;
-  if (gdpClientCache) {
-    try {
-      const cacheData = JSON.parse(gdpClientCache);
-      for (const key of Object.keys(cacheData)) {
-        if (cacheData[key]?.property) { property = cacheData[key].property; console.log("Found via gdpClientCache"); break; }
-      }
-    } catch (e) { console.log("gdpClientCache failed:", e.message); }
-  }
+  // Address
+  const addr = prop.address || prop.streetAddress || "";
+  const city = prop.city || "";
+  const state = prop.state || "";
+  const zip = prop.zipcode || prop.zip || "";
+  const fullAddress = [addr, city, state, zip].filter(Boolean).join(", ") || prop.hdpData?.homeInfo?.streetAddress || "";
 
-  if (!property) { property = props?.initialReduxState?.gdp?.propertyData; if (property) console.log("Found via initialReduxState"); }
-  if (!property) { property = props?.property || props?.homeDetails || props?.listingData; if (property) console.log("Found via direct props"); }
-
-  if (!property) {
-    console.error("Property not found. pageProps sample:", JSON.stringify(props).substring(0, 500));
-    throw new Error("Property data not found in Zillow page");
-  }
-
-  const imageUrls = extractImages(property);
-  const price = property.price
-    ? `$${Number(property.price).toLocaleString()}`
-    : property.zestimate ? `$${Number(property.zestimate).toLocaleString()} (Zestimate)` : "";
+  // Lot size
+  const lotVal = prop.lotSizeWithUnit?.lotSize || prop.lotAreaValue || prop.lotSize || "";
+  const lotUnit = prop.lotSizeWithUnit?.lotSizeUnit || prop.lotAreaUnit || "sqft";
+  const lotSize = lotVal ? `${lotVal} ${lotUnit}` : "";
 
   return {
-    address: [property.streetAddress, property.city, property.state, property.zipcode].filter(Boolean).join(", "),
+    address: fullAddress,
     price,
-    beds: property.bedrooms?.toString() || "",
-    baths: property.bathrooms?.toString() || "",
-    sqft: property.livingArea ? Number(property.livingArea).toLocaleString() : "",
-    lotSize: property.lotAreaValue ? `${property.lotAreaValue} ${property.lotAreaUnit || "sqft"}` : "",
-    yearBuilt: property.yearBuilt?.toString() || "",
-    propertyType: (property.propertyTypeDimension || property.homeType || "")
+    beds: (prop.bedrooms || prop.beds || "").toString(),
+    baths: (prop.bathrooms || prop.baths || "").toString(),
+    sqft: prop.livingArea ? Number(prop.livingArea).toLocaleString() : (prop.area?.toString() || ""),
+    lotSize,
+    yearBuilt: (prop.yearBuilt || "").toString(),
+    propertyType: (prop.propertyType || prop.homeType || "")
       .replace(/_/g, " ")
-      .replace(/\w\S*/g, (w) => w.charAt(0).toUpperCase() + w.substr(1).toLowerCase()),
-    description: property.description || "",
+      .replace(/\w\S*/g, w => w.charAt(0).toUpperCase() + w.substr(1).toLowerCase()),
+    description: prop.description || prop.listing?.description || "",
     imageUrls,
   };
 }
 
-function extractImages(property) {
+function extractImagesFromProperty(prop) {
   const images = [];
-  if (property.hiResImageLink) images.push(property.hiResImageLink);
-  for (const photos of [property.originalPhotos, property.photos, property.responsivePhotos, property.hugePhotos]) {
+  // Various image paths the API might return
+  for (const photos of [
+    prop.carouselPhotos, prop.photos, prop.images,
+    prop.hdpData?.homeInfo?.carouselPhotos,
+  ]) {
     if (!Array.isArray(photos)) continue;
-    for (const photo of photos) {
-      const url = typeof photo === "string" ? photo
-        : photo?.url || photo?.mixedSources?.jpeg?.[0]?.url || photo?.mixedSources?.webp?.[0]?.url || photo?.src || null;
-      if (url && !images.includes(url)) images.push(url);
+    for (const p of photos) {
+      const u = typeof p === "string" ? p : p?.url || p?.src || p?.imgSrc || null;
+      if (u && !images.includes(u)) images.push(u);
     }
     if (images.length >= 5) break;
+  }
+  if (prop.imgSrc && !images.includes(prop.imgSrc)) images.unshift(prop.imgSrc);
+  return images.slice(0, 30);
+}
+
+function extractImagesFromResponse(data) {
+  const images = [];
+  const photos = data?.images || data?.photos || data?.carouselPhotos || [];
+  for (const p of photos) {
+    const u = typeof p === "string" ? p : p?.url || p?.src || null;
+    if (u && !images.includes(u)) images.push(u);
   }
   return images.slice(0, 30);
 }
