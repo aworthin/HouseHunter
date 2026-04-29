@@ -87,8 +87,19 @@ export default function HouseDetailPage() {
     setRefreshing(true)
     setRefreshMsg(null)
     try {
-      const url = house.zillowUrl ||
-        `https://www.zillow.com/homedetails/${house.zpid}_zpid/`
+      // Extract ZPID from URL if not stored separately
+    let zpid = house.zpid
+    if (!zpid && house.zillowUrl) {
+      const match = house.zillowUrl.match(/\/([0-9]+)_zpid/)
+      if (match) zpid = match[1]
+    }
+    const url = house.zillowUrl ||
+      (zpid ? `https://www.zillow.com/homedetails/${zpid}_zpid/` : null)
+    if (!url) {
+      setRefreshMsg({ type: 'error', text: 'No Zillow URL or ZPID found for this house.' })
+      setRefreshing(false)
+      return
+    }
       const res = await fetch('/api/scrape', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -131,7 +142,7 @@ export default function HouseDetailPage() {
         hoaFee: data.hoaFee || house.hoaFee,
         heating: data.heating || house.heating,
         cooling: data.cooling || house.cooling,
-        zpid: data.zpid || house.zpid,
+        zpid: data.zpid || zpid || house.zpid || null,
         zillowLastChecked: new Date(),
       })
       await addHistory({
