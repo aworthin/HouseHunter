@@ -88,8 +88,18 @@ export default function App() {
 
   // Subscribe to houses
   useEffect(() => {
+    console.time('[HQ] Firebase connect')
     const unsub = subscribeToHouses((data) => {
-      setHouses(data)
+      console.timeEnd('[HQ] Firebase connect')
+      console.log('[HQ] Houses loaded:', data.length)
+      // Migrate old status values to new system
+      const migrated = data.map(h => {
+        if (h.status === 'pending') return { ...h, status: 'new' }
+        if (h.status === 'toured' && h.tourNotes) return { ...h, status: 'toured' }
+        if (h.status === 'toured') return { ...h, status: 'reviewed' }
+        return h
+      })
+      setHouses(migrated)
       setLoading(false)
     })
     return unsub
@@ -97,12 +107,17 @@ export default function App() {
 
   // Subscribe to latest history ID for badge
   useEffect(() => {
-    const unsub = subscribeToLatestHistoryId(setLatestHistoryId)
+    console.time('[HQ] History connect')
+    const unsub = subscribeToLatestHistoryId((id) => {
+      console.timeEnd('[HQ] History connect')
+      setLatestHistoryId(id)
+    })
     return unsub
   }, [])
 
   // Check stale houses for sold status
   const checkForSold = useCallback(async (houseList) => {
+    console.time('[HQ] checkForSold total')
     const active = [STATUS.NEW, STATUS.REVIEWED, STATUS.TOURED]
     const stale = houseList.filter(h => {
       if (!active.includes(h.status)) return false
@@ -147,6 +162,7 @@ export default function App() {
     }
 
     if (soldHouses.length) setNewlySold(soldHouses)
+    console.timeEnd('[HQ] checkForSold total')
     setCheckStatus('done')
     setTimeout(() => setCheckStatus(null), 3000)
   }, [])

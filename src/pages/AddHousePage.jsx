@@ -29,6 +29,16 @@ const EMPTY_FORM = {
   imageUrls: [],
   floorPlanUrl: '',
   notes: '',
+  garage: '',
+  flooring: '',
+  foundation: '',
+  stories: '',
+  materials: '',
+  roof: '',
+  hoaFee: '',
+  heating: '',
+  cooling: '',
+  zpid: '',
 }
 
 export default function AddHousePage() {
@@ -246,6 +256,51 @@ export default function AddHousePage() {
           <div>
             <label className="label">Year Built</label>
             <input className="input" placeholder="1995" value={form.yearBuilt} onChange={e => set('yearBuilt', e.target.value)} inputMode="numeric" />
+          </div>
+        </div>
+
+        {/* Garage / Parking */}
+        <div>
+          <label className="label">Garage / Parking</label>
+          <input className="input" placeholder="e.g. 2-car Attached Garage" value={form.garage} onChange={e => set('garage', e.target.value)} />
+        </div>
+
+        {/* Stories / Flooring / Foundation */}
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="label">Stories</label>
+            <input className="input" placeholder="1" value={form.stories} onChange={e => set('stories', e.target.value)} inputMode="numeric" />
+          </div>
+          <div>
+            <label className="label">HOA Fee</label>
+            <input className="input" placeholder="$48/mo" value={form.hoaFee} onChange={e => set('hoaFee', e.target.value)} />
+          </div>
+        </div>
+
+        <div>
+          <label className="label">Flooring</label>
+          <input className="input" placeholder="Carpet, Luxury Vinyl Plank, Tile" value={form.flooring} onChange={e => set('flooring', e.target.value)} />
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="label">Foundation</label>
+            <input className="input" placeholder="Crawlspace" value={form.foundation} onChange={e => set('foundation', e.target.value)} />
+          </div>
+          <div>
+            <label className="label">Roof</label>
+            <input className="input" placeholder="Architectural Shingle" value={form.roof} onChange={e => set('roof', e.target.value)} />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="label">Heating</label>
+            <input className="input" placeholder="Electric" value={form.heating} onChange={e => set('heating', e.target.value)} />
+          </div>
+          <div>
+            <label className="label">Cooling</label>
+            <input className="input" placeholder="Electric" value={form.cooling} onChange={e => set('cooling', e.target.value)} />
           </div>
         </div>
 

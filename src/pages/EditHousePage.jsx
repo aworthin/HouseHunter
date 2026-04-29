@@ -104,6 +104,49 @@ export default function EditHousePage() {
         </div>
 
         <div>
+          <label className="label">Garage / Parking</label>
+          <input className="input" value={form.garage} onChange={e => set('garage', e.target.value)} placeholder="2-car Attached Garage" />
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="label">Stories</label>
+            <input className="input" value={form.stories} onChange={e => set('stories', e.target.value)} inputMode="numeric" />
+          </div>
+          <div>
+            <label className="label">HOA Fee</label>
+            <input className="input" value={form.hoaFee} onChange={e => set('hoaFee', e.target.value)} placeholder="$48/mo" />
+          </div>
+        </div>
+
+        <div>
+          <label className="label">Flooring</label>
+          <input className="input" value={form.flooring} onChange={e => set('flooring', e.target.value)} placeholder="Carpet, LVP, Tile" />
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="label">Foundation</label>
+            <input className="input" value={form.foundation} onChange={e => set('foundation', e.target.value)} />
+          </div>
+          <div>
+            <label className="label">Roof</label>
+            <input className="input" value={form.roof} onChange={e => set('roof', e.target.value)} />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="label">Heating</label>
+            <input className="input" value={form.heating} onChange={e => set('heating', e.target.value)} />
+          </div>
+          <div>
+            <label className="label">Cooling</label>
+            <input className="input" value={form.cooling} onChange={e => set('cooling', e.target.value)} />
+          </div>
+        </div>
+
+        <div>
           <label className="label">Zillow URL</label>
           <input className="input" value={form.zillowUrl} onChange={e => set('zillowUrl', e.target.value)} type="url" inputMode="url" placeholder="https://zillow.com/..." />
         </div>
