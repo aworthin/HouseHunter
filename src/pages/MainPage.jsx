@@ -59,7 +59,7 @@ export default function MainPage() {
         <div className="px-4 pt-safe pt-4 pb-3 flex items-center justify-between"
              style={{ paddingTop: `max(1rem, env(safe-area-inset-top))` }}>
           <div>
-            <h1 className="font-display text-2xl font-bold text-stone-100">HomeQuest</h1>
+            <h1 className="font-display text-2xl font-bold text-stone-100">HouseHunter</h1>
             <p className="text-stone-500 text-xs mt-0.5">
               {toured.length} toured · {pending.length} pending
             </p>

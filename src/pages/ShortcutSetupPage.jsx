@@ -39,7 +39,7 @@ const steps = [
   },
   {
     number: 6,
-    title: 'Name the shortcut "Add to HomeQuest"',
+    title: 'Name the shortcut "Add to HouseHunter"',
     detail: 'Tap the shortcut name at the top to rename it.',
     tip: null,
   },
@@ -77,7 +77,7 @@ export default function ShortcutSetupPage() {
           <p className="text-amber-400 font-medium text-sm mb-1">How it works</p>
           <p className="text-stone-400 text-sm leading-relaxed">
             Once set up, you can be browsing a listing in the Zillow app or Safari, tap the
-            Share button, and tap <span className="text-stone-200 font-medium">"Add to HomeQuest"</span>.
+            Share button, and tap <span className="text-stone-200 font-medium">"Add to HouseHunter"</span>.
             The app will open and automatically pull the listing details.
           </p>
         </div>
@@ -126,7 +126,7 @@ export default function ShortcutSetupPage() {
             <div className="text-3xl mb-2">🎉</div>
             <p className="text-green-400 font-semibold text-base">Shortcut is ready!</p>
             <p className="text-stone-500 text-sm mt-1">
-              Open Zillow, find a listing, tap Share, then tap "Add to HomeQuest"
+              Open Zillow, find a listing, tap Share, then tap "Add to HouseHunter"
             </p>
           </div>
         )}
@@ -150,7 +150,7 @@ export default function ShortcutSetupPage() {
           <p className="text-stone-400 text-sm font-medium mb-1">Using the Zillow app?</p>
           <p className="text-stone-500 text-xs leading-relaxed">
             Works the same way. In the Zillow app, open a listing, tap the Share icon (usually top-right),
-            and you'll see "Add to HomeQuest" in your share sheet alongside AirDrop, Messages, etc.
+            and you'll see "Add to HouseHunter" in your share sheet alongside AirDrop, Messages, etc.
           </p>
         </div>
 

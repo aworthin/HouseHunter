@@ -1,4 +1,4 @@
-# HomeQuest — House Hunter App
+# HouseHunter — House Hunter App
 
 A mobile-first PWA for tracking, touring, and ranking houses during your home search.
 

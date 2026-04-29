@@ -36,7 +36,7 @@ app.get('*', (req, res) => {
 })
 
 app.listen(PORT, () => {
-  console.log(`HomeQuest server running on port ${PORT}`)
+  console.log(`HouseHunter server running on port ${PORT}`)
 })
 
 // ---- Scraper (same as netlify function) ----

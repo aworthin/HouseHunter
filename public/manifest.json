@@ -1,6 +1,6 @@
 {
-  "name": "HomeQuest - House Hunter",
-  "short_name": "HomeQuest",
+  "name": "HouseHunter",
+  "short_name": "HouseHunter",
   "description": "Track and rank houses during your home search",
   "start_url": "/",
   "display": "standalone",
