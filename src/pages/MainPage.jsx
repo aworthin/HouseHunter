@@ -52,7 +52,7 @@ function SectionHeader({ icon: Icon, label, count, color = 'text-stone-400', def
             {label}
           </h2>
           {count > 0 && (
-            <span className="text-xs text-stone-600 bg-stone-800 px-2 py-0.5 rounded-full ml-1">{count}</span>
+            <span className="text-xs text-stone-300 bg-stone-700 px-2 py-0.5 rounded-full ml-1">{count}</span>
           )}
           <span className="text-stone-600 text-xs ml-auto">{open ? '▲' : '▼'}</span>
         </button>
