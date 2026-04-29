@@ -165,15 +165,18 @@ function formatProperty(prop, imgData, fallbackAddress) {
   const zip = prop.zipcode || prop.zip || "";
   const fullAddress = [street, city, state, zip].filter(Boolean).join(", ") || fallbackAddress;
 
+  // resoFacts has cleaner pre-formatted strings
+  const reso = prop.resoFacts || {};
+
   return {
     address: fullAddress,
     price,
-    beds: (prop.bedrooms || prop.beds || "").toString(),
-    baths: (prop.bathrooms || prop.baths || "").toString(),
+    beds: (prop.bedrooms || reso.bedrooms || prop.beds || "").toString(),
+    baths: (prop.bathrooms || reso.bathrooms || prop.baths || "").toString(),
     sqft: prop.livingArea ? Number(prop.livingArea).toLocaleString() : (prop.livingAreaValue?.toString() || ""),
-    lotSize: formatLotSize(prop),
-    yearBuilt: (prop.yearBuilt || "").toString(),
-    propertyType: (prop.propertyTypeDimension || prop.homeType || prop.propertyType || "")
+    lotSize: reso.lotSize || formatLotSize(prop),
+    yearBuilt: (prop.yearBuilt || reso.yearBuilt || "").toString(),
+    propertyType: (prop.propertyTypeDimension || prop.homeType || prop.propertyType || reso.homeType || "")
       .replace(/_/g, " ")
       .replace(/\w\S*/g, w => w.charAt(0).toUpperCase() + w.substr(1).toLowerCase()),
     description: prop.description || "",
