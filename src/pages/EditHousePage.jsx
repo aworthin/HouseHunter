@@ -27,6 +27,7 @@ export default function EditHousePage() {
     flooring: house.flooring || '',
     foundation: house.foundation || '',
     stories: house.stories || '',
+    hasOffice: house.hasOffice || false,
   } : {})
 
   const [saving, setSaving] = useState(false)
@@ -89,6 +90,23 @@ export default function EditHousePage() {
             <label className="label">Sq Ft</label>
             <input className="input" value={form.sqft} onChange={e => set('sqft', e.target.value)} inputMode="decimal" />
           </div>
+        </div>
+
+        {/* Office */}
+        <div>
+          <label className="flex items-center gap-3 cursor-pointer group">
+            <div
+              onClick={() => set('hasOffice', !form.hasOffice)}
+              className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all shrink-0 ${
+                form.hasOffice
+                  ? 'bg-amber-500 border-amber-500'
+                  : 'bg-stone-800 border-stone-600 group-active:border-amber-500'
+              }`}
+            >
+              {form.hasOffice && <span className="text-stone-950 text-xs font-bold">✓</span>}
+            </div>
+            <span className="text-stone-300 text-sm font-medium">Has Office / Bonus Room</span>
+          </label>
         </div>
 
         <div className="grid grid-cols-2 gap-3">

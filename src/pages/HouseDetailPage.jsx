@@ -196,7 +196,7 @@ export default function HouseDetailPage() {
         {/* Quick stats */}
         {(house.beds || house.baths || house.sqft) && (
           <div className="grid grid-cols-3 gap-3">
-            {house.beds && <div className="card p-3 text-center"><Bed size={18} className="text-stone-500 mx-auto mb-1" /><p className="text-stone-100 font-semibold">{house.beds}</p><p className="text-stone-500 text-xs">Beds</p></div>}
+            {house.beds && <div className="card p-3 text-center"><Bed size={18} className="text-stone-500 mx-auto mb-1" /><p className="text-stone-100 font-semibold">{house.beds}{house.hasOffice ? <span className="text-amber-400 text-xs"> +off</span> : ''}</p><p className="text-stone-500 text-xs">Beds</p></div>}
             {house.baths && <div className="card p-3 text-center"><Bath size={18} className="text-stone-500 mx-auto mb-1" /><p className="text-stone-100 font-semibold">{house.baths}</p><p className="text-stone-500 text-xs">Baths</p></div>}
             {house.sqft && <div className="card p-3 text-center"><Square size={18} className="text-stone-500 mx-auto mb-1" /><p className="text-stone-100 font-semibold">{house.sqft}</p><p className="text-stone-500 text-xs">Sq Ft</p></div>}
           </div>
@@ -205,6 +205,7 @@ export default function HouseDetailPage() {
         {/* Details */}
         <div className="card px-4">
           <InfoRow icon={Calendar} label="Year Built" value={house.yearBuilt} />
+          {house.hasOffice && <InfoRow icon={Home} label="Office / Bonus Room" value="Yes" />}
           <InfoRow icon={Square} label="Lot Size" value={house.lotSize} />
           <InfoRow icon={Home} label="Property Type" value={house.propertyType} />
           <InfoRow icon={Car} label="Garage / Parking" value={house.garage} />

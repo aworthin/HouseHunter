@@ -76,7 +76,7 @@ export default function HouseCard({ house, rank, dragHandleProps, isDragging }) 
               <p className="text-amber-400 font-semibold text-sm mb-2">{house.price}</p>
             )}
             <div className="flex items-center gap-3 text-stone-500 text-xs">
-              {house.beds && <span className="flex items-center gap-1"><Bed size={11} /> {house.beds}bd</span>}
+              {house.beds && <span className="flex items-center gap-1"><Bed size={11} /> {house.beds}bd{house.hasOffice ? ' + office' : ''}</span>}
               {house.baths && <span className="flex items-center gap-1"><Bath size={11} /> {house.baths}ba</span>}
               {house.sqft && <span className="flex items-center gap-1"><Square size={11} /> {house.sqft}</span>}
             </div>
