@@ -145,9 +145,7 @@ export default function HouseDetailPage() {
       await addHistory({
         houseId: id,
         address: house.address,
-        event: 'status_changed',
-        fromStatus: house.status,
-        toStatus: house.status,
+        event: 'refreshed',
         note: 'Refreshed data from Zillow',
       })
       setRefreshMsg({ type: 'success', text: 'Data refreshed from Zillow successfully.' })

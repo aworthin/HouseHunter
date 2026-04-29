@@ -5,7 +5,7 @@ export default function AddressActionSheet({ address, onClose }) {
   if (!address) return null
 
   function openInMaps() {
-    const encoded = encodeURIComponent(address)
+    const encoded = encodeURIComponent(address.replace(/"/g, ""))
     // Try Apple Maps first (works on iOS), falls back to Google Maps
     window.open(`maps://?q=${encoded}`, '_blank') ||
       window.open(`https://maps.apple.com/?q=${encoded}`, '_blank')
