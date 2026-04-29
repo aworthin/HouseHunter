@@ -46,7 +46,9 @@ exports.scrape = onRequest(
         getPropertyImages(zpid, url),
       ]);
 
-      const result = formatProperty(propData, imgData, addressFromUrl);
+      // API returns data nested under propertyDetails key
+  const propDetails = propData?.propertyDetails || propData;
+  const result = formatProperty(propDetails, imgData, addressFromUrl);
       console.log("=== SUCCESS === address:", result.address, "images:", result.imageUrls.length);
       res.json(result);
     } catch (err) {
@@ -97,6 +99,9 @@ async function getPropertyDetails(zpid) {
   }
   const json = await response.json();
   console.log("Details keys:", Object.keys(json).slice(0, 15).join(", "));
+  const details = json?.propertyDetails || json;
+  console.log("propertyDetails keys:", Object.keys(details).slice(0, 20).join(", "));
+  console.log("Sample - price:", details.price, "beds:", details.bedrooms, "baths:", details.bathrooms, "sqft:", details.livingArea);
   return json;
 }
 
@@ -170,8 +175,11 @@ function formatProperty(prop, imgData, fallbackAddress) {
 function extractImages(prop, imgData) {
   const images = [];
 
-  // Try image response first
-  const imgSources = Array.isArray(imgData) ? imgData : (imgData?.images || imgData?.photos || imgData?.carouselPhotos || []);
+  // Try image response first - private-zillow returns hiResImageLink + array
+  if (imgData?.hiResImageLink) images.push(imgData.hiResImageLink);
+  const imgSources = Array.isArray(imgData)
+    ? imgData
+    : (imgData?.images || imgData?.photos || imgData?.carouselPhotos || imgData?.propertyImages || []);
   for (const p of imgSources) {
     const u = typeof p === "string" ? p : p?.url || p?.src || p?.imgSrc || null;
     if (u && !images.includes(u)) images.push(u);
