@@ -5,7 +5,7 @@ import {
   useSensor, useSensors, DragOverlay
 } from '@dnd-kit/core'
 import { SortableContext, verticalListSortingStrategy, arrayMove } from '@dnd-kit/sortable'
-import { Plus, Home, Trophy, Clock, BarChart2 } from '../icons'
+import { Plus, Home, Trophy, Clock, BarChart2, Smartphone } from '../icons'
 import { useHouses } from '../App'
 import { updateRanks } from '../lib/db'
 import SortableHouseCard from '../components/SortableHouseCard'
@@ -65,7 +65,14 @@ export default function MainPage() {
             </p>
           </div>
           <div className="flex items-center gap-2">
-            {toured.length > 1 && (
+            <button
+              onClick={() => navigate('/shortcut-setup')}
+              className="bg-stone-800 text-stone-300 p-2.5 rounded-xl border border-stone-700 active:scale-95 transition-transform"
+              title="iOS Shortcut Setup"
+            >
+              <Smartphone size={18} />
+            </button>
+          {toured.length > 1 && (
               <button
                 onClick={() => navigate('/ranking')}
                 className="bg-stone-800 text-stone-300 p-2.5 rounded-xl border border-stone-700 active:scale-95 transition-transform"

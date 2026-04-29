@@ -1,5 +1,5 @@
-import React, { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import React, { useState, useEffect } from 'react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { ArrowLeft, Link2, Loader2, AlertCircle, CheckCircle } from '../icons'
 import { addHouse } from '../lib/db'
 
@@ -23,14 +23,57 @@ const EMPTY_FORM = {
 
 export default function AddHousePage() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const [form, setForm] = useState(EMPTY_FORM)
   const [scraping, setScraping] = useState(false)
-  const [scrapeStatus, setScrapeStatus] = useState(null) // 'success' | 'error' | null
+  const [scrapeStatus, setScrapeStatus] = useState(null)
   const [scrapeMsg, setScrapeMsg] = useState('')
   const [saving, setSaving] = useState(false)
 
+  // Auto-trigger scrape when opened from iOS Shortcut with ?zillow=URL
+  useEffect(() => {
+    const zillowParam = searchParams.get('zillow')
+    if (zillowParam && zillowParam.includes('zillow.com')) {
+      setForm(f => ({ ...f, zillowUrl: zillowParam }))
+      runScrape(zillowParam)
+    }
+  }, [])
+
   function set(field, value) {
     setForm(f => ({ ...f, [field]: value }))
+  }
+
+  async function runScrape(url) {
+    setScraping(true)
+    setScrapeStatus(null)
+    try {
+      const res = await fetch(SCRAPER_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url })
+      })
+      const data = await res.json()
+
+      if (data._partial) {
+        if (data.address) setForm(f => ({ ...f, zillowUrl: url, address: data.address }))
+        setScrapeStatus('partial')
+        setScrapeMsg('Zillow limited the data — address pre-filled. Please complete the remaining fields.')
+      } else if (data.error) {
+        setForm(f => ({ ...f, zillowUrl: url }))
+        setScrapeStatus('error')
+        setScrapeMsg('Could not pull data from Zillow — please fill in details manually below.')
+      } else {
+        setForm(f => ({ ...f, zillowUrl: url, ...data }))
+        setScrapeStatus('success')
+        setScrapeMsg(`Loaded: ${data.address || 'listing details pulled successfully'}`)
+      }
+    } catch (err) {
+      setForm(f => ({ ...f, zillowUrl: url }))
+      setScrapeStatus('error')
+      setScrapeMsg('Could not pull data from Zillow — please fill in details manually below.')
+    } finally {
+      setScraping(false)
+    }
   }
 
   async function handleScrape() {
@@ -39,34 +82,7 @@ export default function AddHousePage() {
       setScrapeMsg('Please enter a valid Zillow listing URL')
       return
     }
-    setScraping(true)
-    setScrapeStatus(null)
-    try {
-      const res = await fetch(SCRAPER_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url: form.zillowUrl })
-      })
-      const data = await res.json()
-
-      if (data._partial) {
-        if (data.address) setForm(f => ({ ...f, address: data.address }))
-        setScrapeStatus('partial')
-        setScrapeMsg('Zillow blocked the data pull — address pre-filled from URL. Please fill in the remaining details manually.')
-      } else if (data.error) {
-        setScrapeStatus('error')
-        setScrapeMsg('Could not pull data from Zillow — please fill in details manually below.')
-      } else {
-        setForm(f => ({ ...f, ...data }))
-        setScrapeStatus('success')
-        setScrapeMsg(`Found: ${data.address || 'listing details loaded'}`)
-      }
-    } catch (err) {
-      setScrapeStatus('error')
-      setScrapeMsg('Could not pull data from Zillow — please fill in details manually below.')
-    } finally {
-      setScraping(false)
-    }
+    runScrape(form.zillowUrl)
   }
 
   async function handleSave() {
@@ -103,7 +119,9 @@ export default function AddHousePage() {
         <button onClick={() => navigate(-1)} className="text-stone-400 active:text-stone-200 transition-colors">
           <ArrowLeft size={22} />
         </button>
-        <h1 className="font-display text-xl font-semibold text-stone-100 flex-1">Add House</h1>
+        <h1 className="font-display text-xl font-semibold text-stone-100 flex-1">
+          {scraping ? 'Loading Listing...' : 'Add House'}
+        </h1>
         <button
           onClick={handleSave}
           disabled={saving || (!form.address && !form.zillowUrl)}
@@ -148,11 +166,22 @@ export default function AddHousePage() {
                 ? 'bg-amber-950/50 text-amber-400 border border-amber-900'
                 : 'bg-red-950/50 text-red-400 border border-red-900'
             }`}>
-              {scrapeStatus === 'success' ? <CheckCircle size={16} className="shrink-0 mt-0.5" /> : <AlertCircle size={16} className="shrink-0 mt-0.5" />}
+              {scrapeStatus === 'success'
+                ? <CheckCircle size={16} className="shrink-0 mt-0.5" />
+                : <AlertCircle size={16} className="shrink-0 mt-0.5" />}
               {scrapeMsg}
             </div>
           )}
         </div>
+
+        {/* Loading overlay while auto-scraping from shortcut */}
+        {scraping && (
+          <div className="card p-6 flex flex-col items-center gap-3 border-amber-500/20">
+            <Loader2 size={28} className="animate-spin text-amber-500" />
+            <p className="text-stone-300 text-sm font-medium">Pulling listing details from Zillow...</p>
+            <p className="text-stone-500 text-xs text-center">This usually takes a few seconds</p>
+          </div>
+        )}
 
         {/* Address */}
         <div>
