@@ -4,7 +4,7 @@ const { setGlobalOptions } = require("firebase-functions/v2");
 setGlobalOptions({ maxInstances: 10 });
 
 const RAPIDAPI_KEY = "697dd9b3c6msh463d183612ebbf7p1eb708jsn558cc5817d68";
-const RAPIDAPI_HOST = "zillow56.p.rapidapi.com";
+const RAPIDAPI_HOST = "private-zillow.p.rapidapi.com";
 
 exports.scrape = onRequest(
   { timeoutSeconds: 30 },
@@ -40,9 +40,15 @@ exports.scrape = onRequest(
     try {
       if (!zpid) throw new Error("Could not extract ZPID from URL");
 
-      const data = await getPropertyByZpid(zpid, addressFromUrl);
-      console.log("=== SUCCESS ===", data.address);
-      res.json(data);
+      // Fetch property details and images in parallel
+      const [propData, imgData] = await Promise.all([
+        getPropertyDetails(zpid),
+        getPropertyImages(zpid, url),
+      ]);
+
+      const result = formatProperty(propData, imgData, addressFromUrl);
+      console.log("=== SUCCESS === address:", result.address, "images:", result.imageUrls.length);
+      res.json(result);
     } catch (err) {
       console.error("=== FAILED ===", err.message);
       res.json({ error: err.message, address: addressFromUrl, _partial: true });
@@ -68,43 +74,64 @@ function extractAddressFromUrl(url) {
     const stateMatch = withoutZip.match(/-([A-Z]{2})$/);
     const state = stateMatch ? stateMatch[1] : "";
     const withoutState = state ? withoutZip.replace(/-[A-Z]{2}$/, "") : withoutZip;
-    const streetAndCity = withoutState.replace(/-/g, " ");
-    return [streetAndCity, state, zip].filter(Boolean).join(" ");
+    return [withoutState.replace(/-/g, " "), state, zip].filter(Boolean).join(" ");
   } catch { return ""; }
 }
 
-async function getPropertyByZpid(zpid, fallbackAddress) {
-  console.log("Fetching property details for zpid:", zpid);
-
+async function getPropertyDetails(zpid) {
+  console.log("Fetching property details, zpid:", zpid);
   const response = await fetch(
-    `https://${RAPIDAPI_HOST}/propertyDetails?zpid=${zpid}`,
+    `https://${RAPIDAPI_HOST}/pro/byzpid?zpid=${zpid}`,
     {
       headers: {
+        "Content-Type": "application/json",
         "x-rapidapi-host": RAPIDAPI_HOST,
         "x-rapidapi-key": RAPIDAPI_KEY,
       },
     }
   );
-
-  console.log("Response status:", response.status);
+  console.log("Details status:", response.status);
   if (!response.ok) {
-    const body = await response.text();
-    console.log("Error body:", body.substring(0, 200));
-    throw new Error(`RapidAPI zillow56 returned ${response.status}: ${body.substring(0, 100)}`);
+    const text = await response.text();
+    throw new Error(`Property details API returned ${response.status}: ${text.substring(0, 100)}`);
   }
-
   const json = await response.json();
-  console.log("Response keys:", Object.keys(json).slice(0, 15).join(", "));
-
-  return formatProperty(json, fallbackAddress);
+  console.log("Details keys:", Object.keys(json).slice(0, 15).join(", "));
+  return json;
 }
 
-function formatProperty(prop, fallbackAddress) {
+async function getPropertyImages(zpid, url) {
+  console.log("Fetching images, zpid:", zpid);
+  try {
+    const encodedUrl = encodeURIComponent(url);
+    const response = await fetch(
+      `https://${RAPIDAPI_HOST}/propimages?byzpid=${zpid}&byurl=${encodedUrl}`,
+      {
+        headers: {
+          "Content-Type": "application/json",
+          "x-rapidapi-host": RAPIDAPI_HOST,
+          "x-rapidapi-key": RAPIDAPI_KEY,
+        },
+      }
+    );
+    console.log("Images status:", response.status);
+    if (!response.ok) return [];
+    const json = await response.json();
+    console.log("Images response keys:", Object.keys(json).slice(0, 5).join(", "));
+    return json;
+  } catch (e) {
+    console.log("Images fetch failed:", e.message);
+    return [];
+  }
+}
+
+function formatProperty(prop, imgData, fallbackAddress) {
   if (!prop) throw new Error("Empty property response");
 
-  const imageUrls = extractImages(prop);
+  // Extract images from both property data and image response
+  const imageUrls = extractImages(prop, imgData);
 
-  // Price - zillow56 returns price as number
+  // Price
   let price = "";
   if (prop.price) price = `$${Number(prop.price).toLocaleString()}`;
   else if (prop.listPrice) price = `$${Number(prop.listPrice).toLocaleString()}`;
@@ -140,26 +167,29 @@ function formatProperty(prop, fallbackAddress) {
   };
 }
 
-function extractImages(prop) {
+function extractImages(prop, imgData) {
   const images = [];
-  for (const photos of [
-    prop.carouselPhotos,
-    prop.originalPhotos,
-    prop.responsivePhotos,
-    prop.photos,
-    prop.bigPhotos,
-  ]) {
+
+  // Try image response first
+  const imgSources = Array.isArray(imgData) ? imgData : (imgData?.images || imgData?.photos || imgData?.carouselPhotos || []);
+  for (const p of imgSources) {
+    const u = typeof p === "string" ? p : p?.url || p?.src || p?.imgSrc || null;
+    if (u && !images.includes(u)) images.push(u);
+  }
+
+  // Then try property data
+  for (const photos of [prop.carouselPhotos, prop.originalPhotos, prop.responsivePhotos, prop.photos, prop.bigPhotos]) {
     if (!Array.isArray(photos)) continue;
     for (const p of photos) {
       const u = typeof p === "string" ? p
         : p?.url || p?.src || p?.imgSrc
         || p?.mixedSources?.jpeg?.[0]?.url
-        || p?.mixedSources?.webp?.[0]?.url
-        || null;
+        || p?.mixedSources?.webp?.[0]?.url || null;
       if (u && !images.includes(u)) images.push(u);
     }
     if (images.length >= 5) break;
   }
+
   if (prop.imgSrc && !images.includes(prop.imgSrc)) images.unshift(prop.imgSrc);
   return images.slice(0, 30);
 }
