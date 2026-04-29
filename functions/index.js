@@ -66,16 +66,32 @@ function extractAddressFromUrl(url) {
   try {
     const match = url.match(/homedetails\/([^/]+)\//);
     if (!match) return "";
-    // Parse: 8-Epping-Dr-Bella-Vista-AR-72714
     const slug = match[1];
-    // Remove zpid suffix if present
-    const clean = slug.replace(/-\d+_zpid$/, "").replace(/_zpid$/, "");
-    return clean
-      .replace(/-(\d{5})$/, ", $1")       // ZIP
-      .replace(/-([A-Z]{2})-/, ", $1 ")   // State
-      .replace(/-/g, " ")
-      .trim();
-  } catch { return ""; }
+    // Remove zpid suffix: 8-Epping-Dr-Bella-Vista-AR-72714-454348587_zpid
+    const clean = slug.replace(/-\d{7,}_zpid.*$/, "").replace(/_zpid.*$/, "");
+    // clean = "8-Epping-Dr-Bella-Vista-AR-72714"
+    // Find ZIP (5 digits at end)
+    const zipMatch = clean.match(/-(\d{5})$/);
+    const zip = zipMatch ? zipMatch[1] : "";
+    const withoutZip = zip ? clean.replace(/-\d{5}$/, "") : clean;
+    // Find state (2 uppercase letters before ZIP)
+    const stateMatch = withoutZip.match(/-([A-Z]{2})$/);
+    const state = stateMatch ? stateMatch[1] : "";
+    const withoutState = state ? withoutZip.replace(/-[A-Z]{2}$/, "") : withoutZip;
+    // Remaining is street + city - hard to split so use full string for city
+    // Convert dashes to spaces
+    const streetAndCity = withoutState.replace(/-/g, " ");
+    // Try to find where street ends and city begins (after street number + 1-2 words)
+    const parts = streetAndCity.split(" ");
+    // Street is typically: number + 1-3 words. City is the rest.
+    // Use full address for the search - most accurate
+    const fullAddress = [streetAndCity, state, zip].filter(Boolean).join(" ");
+    console.log("Parsed address parts - street+city:", streetAndCity, "state:", state, "zip:", zip);
+    return fullAddress;
+  } catch (e) {
+    console.log("Address parse error:", e.message);
+    return "";
+  }
 }
 
 function extractZpid(url) {
@@ -86,56 +102,46 @@ function extractZpid(url) {
 }
 
 async function searchByAddress(address) {
-  console.log("Searching by address:", address);
-  const encodedAddress = encodeURIComponent(address);
-  const apiUrl = `https://${RAPIDAPI_HOST}/api/zillow/search/byaddress?location=${encodedAddress}&listingStatus=For_Sale&homeType=houses&page=1&sortOrder=Homes_for_you`;
+  // Try multiple search strategies
+  const strategies = [
+    // 1. Full address no filters
+    `https://${RAPIDAPI_HOST}/api/zillow/search/byaddress?location=${encodeURIComponent(address)}&page=1`,
+    // 2. Just street + city (drop state/zip)
+    `https://${RAPIDAPI_HOST}/api/zillow/search/byaddress?location=${encodeURIComponent(address.split(" ").slice(0, 4).join(" "))}&page=1`,
+    // 3. With For Sale filter
+    `https://${RAPIDAPI_HOST}/api/zillow/search/byaddress?location=${encodeURIComponent(address)}&listingStatus=For_Sale&page=1`,
+  ];
 
-  const response = await fetch(apiUrl, {
-    headers: {
-      "Content-Type": "application/json",
-      "x-rapidapi-host": RAPIDAPI_HOST,
-      "x-rapidapi-key": RAPIDAPI_KEY,
-    },
-  });
+  for (const apiUrl of strategies) {
+    console.log("Trying search URL:", apiUrl);
+    try {
+      const response = await fetch(apiUrl, {
+        headers: {
+          "Content-Type": "application/json",
+          "x-rapidapi-host": RAPIDAPI_HOST,
+          "x-rapidapi-key": RAPIDAPI_KEY,
+        },
+      });
 
-  console.log("Search response status:", response.status);
-  if (!response.ok) throw new Error(`RapidAPI returned ${response.status}`);
+      console.log("Search response status:", response.status);
+      if (!response.ok) continue;
 
-  const json = await response.json();
-  console.log("Search result keys:", Object.keys(json).join(", "));
+      const json = await response.json();
+      console.log("Search result keys:", Object.keys(json).join(", "));
+      console.log("resultsCount:", json.resultsCount);
 
-  // Find the best matching property
-  const listings = json?.searchResults?.listResults || json?.results || json?.data || [];
-  console.log("Listings found:", listings.length);
+      const listings = json?.searchResults?.listResults || json?.results || json?.data || [];
+      console.log("Listings found:", listings.length);
 
-  if (!listings.length) {
-    // Try without filters for sold/off-market homes
-    return searchByAddressAny(address);
+      if (listings.length > 0) {
+        return formatProperty(listings[0]);
+      }
+    } catch (e) {
+      console.log("Strategy failed:", e.message);
+    }
   }
 
-  const prop = listings[0];
-  return formatProperty(prop);
-}
-
-async function searchByAddressAny(address) {
-  console.log("Retrying search without filters:", address);
-  const encodedAddress = encodeURIComponent(address);
-  const apiUrl = `https://${RAPIDAPI_HOST}/api/zillow/search/byaddress?location=${encodedAddress}&page=1`;
-
-  const response = await fetch(apiUrl, {
-    headers: {
-      "Content-Type": "application/json",
-      "x-rapidapi-host": RAPIDAPI_HOST,
-      "x-rapidapi-key": RAPIDAPI_KEY,
-    },
-  });
-
-  if (!response.ok) throw new Error(`RapidAPI search retry returned ${response.status}`);
-  const json = await response.json();
-  const listings = json?.searchResults?.listResults || json?.results || json?.data || [];
-  console.log("Retry listings found:", listings.length);
-  if (!listings.length) throw new Error("No listings found for this address");
-  return formatProperty(listings[0]);
+  throw new Error("No listings found for address: " + address);
 }
 
 async function getByZpid(zpid, fallbackAddress) {
