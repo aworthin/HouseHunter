@@ -106,7 +106,7 @@ export const handler = async (event) => {
     console.log("Photos available:", prop.originalPhotos?.length || 0);
 
     const result = formatProperty(prop, addressFromUrl);
-    console.log("=== SUCCESS === address:", result.address, "images:", result.imageUrls.length);
+    console.log("=== SUCCESS === address:", result.address, "images:", result.imageUrls?.length || 0);
 
     return {
       statusCode: 200,
