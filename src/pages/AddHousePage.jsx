@@ -64,7 +64,13 @@ export default function AddHousePage() {
     try {
       const data = await fetchScrape(url)
 
-      if (data._partial) {
+      if (data._sold) {
+        setScrapeStatus('error')
+        setScrapeMsg(`This property has been sold and is no longer listed on Zillow.`)
+      } else if (data._offMarket) {
+        setScrapeStatus('error')
+        setScrapeMsg(`This property is off-market and not currently listed for sale. It cannot be added.`)
+      } else if (data._partial) {
         if (data.address) setForm(f => ({ ...f, zillowUrl: url, address: data.address }))
         setScrapeStatus('partial')
         setScrapeMsg('Zillow limited the data — address pre-filled. Please complete the remaining fields.')
@@ -73,6 +79,18 @@ export default function AddHousePage() {
         setScrapeStatus('error')
         setScrapeMsg('Could not pull data from Zillow — please fill in details manually below.')
       } else {
+        // Check for duplicate ZPID
+        if (data.zpid) {
+          try {
+            const existing = await findHouseByZpid(data.zpid)
+            if (existing) {
+              setScrapeStatus('error')
+              setScrapeMsg(`This house is already in your list as "${existing.address}".`)
+              setForm(f => ({ ...f, zillowUrl: url, ...data }))
+              return
+            }
+          } catch(e) { /* ignore duplicate check errors */ }
+        }
         setForm(f => ({ ...f, zillowUrl: url, ...data }))
         setScrapeStatus('success')
         setScrapeMsg(`Loaded: ${data.address || 'listing details pulled successfully'}`)

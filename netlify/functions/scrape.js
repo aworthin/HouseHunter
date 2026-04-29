@@ -161,14 +161,22 @@ function formatProperty(prop, fallbackAddress) {
   // ── Off-market / sold detection ──────────────────────────────────
   const homeStatus = prop.homeStatus || "";
   const isSold = ["RECENTLY_SOLD", "SOLD"].includes(homeStatus);
-  const isOffMarket = homeStatus === "OTHER" || homeStatus === "HOME_TYPE_UNKNOWN" ||
-    (!prop.bedrooms && !prop.bathrooms && !prop.livingAreaValue && homeStatus !== "FOR_SALE");
 
+  // Off market if: status is OTHER/UNKNOWN, OR no beds+baths, OR "Claim home" page (no MLS data)
+  const isOffMarket = !isSold && (
+    homeStatus === "OTHER" ||
+    homeStatus === "HOME_TYPE_UNKNOWN" ||
+    homeStatus === "" ||
+    (prop.bedrooms === null && prop.bathrooms === null) ||
+    (!prop.livingAreaValue && !prop.bedrooms && homeStatus !== "FOR_SALE" && homeStatus !== "PENDING")
+  );
+
+  const address = formatAddress(prop, fallbackAddress);
   if (isSold) {
-    return { _sold: true, homeStatus, address: formatAddress(prop, fallbackAddress) };
+    return { _sold: true, homeStatus, address };
   }
   if (isOffMarket) {
-    return { _offMarket: true, homeStatus, address: formatAddress(prop, fallbackAddress) };
+    return { _offMarket: true, homeStatus, address };
   }
 
   // ── Address ────────────────────────────────────────────────────
