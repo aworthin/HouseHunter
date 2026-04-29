@@ -158,20 +158,28 @@ function formatProperty(prop, fallbackAddress) {
 
   const reso = prop.resoFacts || {};
 
-  // Address - use structured address object if available
-  const addrObj = prop.address || {};
-  const street = addrObj.streetAddress || prop.streetAddress || "";
-  const city = addrObj.city || prop.city || "";
-  const state = addrObj.state || prop.state || "";
-  const zip = addrObj.zipcode || prop.zipcode || "";
-  const fullAddress = [street, city, state, zip].filter(Boolean).join(", ") || fallbackAddress;
+  // ── Off-market / sold detection ──────────────────────────────────
+  const homeStatus = prop.homeStatus || "";
+  const isSold = ["RECENTLY_SOLD", "SOLD"].includes(homeStatus);
+  const isOffMarket = homeStatus === "OTHER" || homeStatus === "HOME_TYPE_UNKNOWN" ||
+    (!prop.bedrooms && !prop.bathrooms && !prop.livingAreaValue && homeStatus !== "FOR_SALE");
 
-  // Price
+  if (isSold) {
+    return { _sold: true, homeStatus, address: formatAddress(prop, fallbackAddress) };
+  }
+  if (isOffMarket) {
+    return { _offMarket: true, homeStatus, address: formatAddress(prop, fallbackAddress) };
+  }
+
+  // ── Address ────────────────────────────────────────────────────
+  const fullAddress = formatAddress(prop, fallbackAddress);
+
+  // ── Price ──────────────────────────────────────────────────────
   let price = "";
   if (prop.price) price = `$${Number(prop.price).toLocaleString()}`;
   else if (prop.zestimate) price = `$${Number(prop.zestimate).toLocaleString()} (Zestimate)`;
 
-  // Lot size - prefer resoFacts formatted string, fall back to numeric conversion
+  // ── Lot size ───────────────────────────────────────────────────
   let lotSize = reso.lotSize || "";
   if (!lotSize && prop.lotAreaValue) {
     const val = parseFloat(prop.lotAreaValue);
@@ -183,7 +191,42 @@ function formatProperty(prop, fallbackAddress) {
     }
   }
 
-  // Images - from originalPhotos array, pick highest resolution jpeg
+  // ── Garage / parking ───────────────────────────────────────────
+  let garage = "";
+  if (reso.hasGarage || reso.hasAttachedGarage) {
+    const spaces = reso.garageParkingCapacity || reso.coveredParkingCapacity || reso.parkingCapacity || "";
+    const type = reso.hasAttachedGarage ? "Attached" : "Garage";
+    garage = spaces ? `${spaces}-car ${type} Garage` : `${type} Garage`;
+    if (reso.parkingFeatures?.length) {
+      const extra = reso.parkingFeatures.filter(f => !["Attached","Garage","Garage Door Opener"].includes(f));
+      if (extra.length) garage += ` (${extra.join(", ")})`;
+    }
+  } else if (reso.parkingCapacity) {
+    garage = `${reso.parkingCapacity} parking space${reso.parkingCapacity > 1 ? "s" : ""}`;
+  }
+
+  // ── Flooring ───────────────────────────────────────────────────
+  const flooring = Array.isArray(reso.flooring) && reso.flooring.length
+    ? reso.flooring.join(", ")
+    : "";
+
+  // ── Foundation ─────────────────────────────────────────────────
+  const foundation = Array.isArray(reso.foundationDetails) && reso.foundationDetails.length
+    ? reso.foundationDetails.join(", ")
+    : (reso.basement || "");
+
+  // ── Stories ────────────────────────────────────────────────────
+  const stories = reso.stories ? `${reso.stories}` : (reso.levels || "");
+
+  // ── Construction materials ─────────────────────────────────────
+  const materials = Array.isArray(reso.constructionMaterials) && reso.constructionMaterials.length
+    ? reso.constructionMaterials.join(", ")
+    : "";
+
+  // ── Roof ───────────────────────────────────────────────────────
+  const roof = reso.roofType || "";
+
+  // ── Images ────────────────────────────────────────────────────
   const imageUrls = extractImages(prop);
 
   return {
@@ -201,7 +244,28 @@ function formatProperty(prop, fallbackAddress) {
       .replace(/\w\S*/g, w => w.charAt(0).toUpperCase() + w.substr(1).toLowerCase()),
     description: prop.description || "",
     imageUrls,
+    homeStatus,
+    zpid: prop.zpid ? String(prop.zpid) : null,
+    // New fields
+    garage,
+    flooring,
+    foundation,
+    stories,
+    materials,
+    roof,
+    hoaFee: reso.hoaFee || (prop.monthlyHoaFee ? `$${prop.monthlyHoaFee}/mo` : ""),
+    heating: Array.isArray(reso.heating) ? reso.heating.join(", ") : "",
+    cooling: Array.isArray(reso.cooling) ? reso.cooling.join(", ") : "",
   };
+}
+
+function formatAddress(prop, fallbackAddress) {
+  const addrObj = prop.address || {};
+  const street = addrObj.streetAddress || prop.streetAddress || "";
+  const city = addrObj.city || prop.city || "";
+  const state = addrObj.state || prop.state || "";
+  const zip = addrObj.zipcode || prop.zipcode || "";
+  return [street, city, state, zip].filter(Boolean).join(", ") || fallbackAddress;
 }
 
 function extractImages(prop) {

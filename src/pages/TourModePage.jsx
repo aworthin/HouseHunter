@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { ArrowLeft, Star, ClipboardList } from '../icons'
 import { useHouses } from '../App'
-import { updateHouse } from '../lib/db'
+import { updateHouse, changeStatus, addHistory, STATUS } from '../lib/db'
 
 export default function TourModePage() {
   const { id } = useParams()
@@ -30,14 +30,17 @@ export default function TourModePage() {
   async function handleSave() {
     setSaving(true)
     try {
-      const wasAlreadyToured = house.status === 'toured'
-      await updateHouse(id, {
-        ...form,
-        status: 'toured',
-        // Assign rank if first time touring
-        rank: wasAlreadyToured ? house.rank : (toured.length + 1)
-      })
-      // Go to ranking page after first tour
+      const wasAlreadyToured = house.status === STATUS.TOURED
+      const newRank = wasAlreadyToured ? house.rank : (toured.length + 1)
+      await updateHouse(id, { ...form, rank: newRank })
+      if (!wasAlreadyToured) {
+        await changeStatus(house, STATUS.TOURED)
+      } else {
+        await addHistory({
+          houseId: id, address: house.address, event: 'toured',
+          fromStatus: STATUS.TOURED, toStatus: STATUS.TOURED, note: 'Tour notes updated'
+        })
+      }
       if (!wasAlreadyToured) {
         navigate('/ranking', { state: { highlightId: id } })
       } else {
@@ -153,7 +156,7 @@ export default function TourModePage() {
           disabled={saving}
           className="btn-primary w-full py-4 text-base flex items-center justify-center gap-2 disabled:opacity-40"
         >
-          {saving ? 'Saving...' : house.status === 'toured' ? 'Update Tour Notes' : 'Save & Rank This House'}
+          {saving ? 'Saving...' : house.status === STATUS.TOURED ? 'Update Tour Notes' : 'Save & Rank This House'}
         </button>
       </div>
     </div>

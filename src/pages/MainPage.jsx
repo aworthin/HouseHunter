@@ -5,20 +5,46 @@ import {
   useSensor, useSensors, DragOverlay
 } from '@dnd-kit/core'
 import { SortableContext, verticalListSortingStrategy, arrayMove } from '@dnd-kit/sortable'
-import { Plus, Home, Trophy, Clock, BarChart2, Smartphone } from '../icons'
+import {
+  Plus, Trophy, Clock, BarChart2, Smartphone, History,
+  Eye, ThumbsDown, TrendingDown, RefreshCw, Home
+} from '../icons'
 import { useHouses } from '../App'
 import { updateRanks } from '../lib/db'
+import { setLastSeenUlid } from '../lib/userPrefs'
 import SortableHouseCard from '../components/SortableHouseCard'
 import HouseCard from '../components/HouseCard'
 import LoadingSpinner from '../components/LoadingSpinner'
 
+function SectionHeader({ icon: Icon, label, count, color = 'text-stone-400', defaultOpen = true, children }) {
+  const [open, setOpen] = useState(defaultOpen)
+  return (
+    <section>
+      <button
+        onClick={() => setOpen(o => !o)}
+        className="flex items-center gap-2 mb-3 w-full group"
+      >
+        <Icon size={16} className={color} />
+        <h2 className={`font-display text-lg font-semibold ${color === 'text-stone-400' ? 'text-stone-100' : color.replace('text-', 'text-')}`}>
+          {label}
+        </h2>
+        {count > 0 && (
+          <span className="text-xs text-stone-600 bg-stone-800 px-2 py-0.5 rounded-full ml-1">{count}</span>
+        )}
+        <span className="text-stone-600 text-xs ml-auto">{open ? '▲' : '▼'}</span>
+      </button>
+      {open && children}
+    </section>
+  )
+}
+
 export default function MainPage() {
   const navigate = useNavigate()
-  const { toured, pending, loading } = useHouses()
+  const { ranked, reviewed, newHouses, rejected, sold, loading, checkStatus, hasUnreadHistory, latestHistoryId } = useHouses()
   const [activeId, setActiveId] = useState(null)
-  const [localToured, setLocalToured] = useState(null)
+  const [localRanked, setLocalRanked] = useState(null)
 
-  const displayToured = localToured || toured
+  const displayRanked = localRanked || ranked
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -27,24 +53,26 @@ export default function MainPage() {
 
   function handleDragStart({ active }) {
     setActiveId(active.id)
-    if (!localToured) setLocalToured([...toured])
+    if (!localRanked) setLocalRanked([...ranked])
   }
 
   function handleDragEnd({ active, over }) {
     setActiveId(null)
-    if (!over || active.id === over.id) {
-      setLocalToured(null)
-      return
-    }
-    const current = localToured || toured
+    if (!over || active.id === over.id) { setLocalRanked(null); return }
+    const current = localRanked || ranked
     const oldIndex = current.findIndex(h => h.id === active.id)
     const newIndex = current.findIndex(h => h.id === over.id)
     const reordered = arrayMove(current, oldIndex, newIndex)
-    setLocalToured(reordered)
-    updateRanks(reordered.map(h => h.id)).then(() => setLocalToured(null))
+    setLocalRanked(reordered)
+    updateRanks(reordered.map(h => h.id)).then(() => setLocalRanked(null))
   }
 
-  const activeHouse = activeId ? (localToured || toured).find(h => h.id === activeId) : null
+  const activeHouse = activeId ? (localRanked || ranked).find(h => h.id === activeId) : null
+
+  function handleHistoryClick() {
+    if (latestHistoryId) setLastSeenUlid(latestHistoryId)
+    navigate('/history')
+  }
 
   if (loading) return (
     <div className="min-h-dvh bg-stone-950 flex items-center justify-center">
@@ -56,114 +84,139 @@ export default function MainPage() {
     <div className="min-h-dvh bg-stone-950">
       {/* Header */}
       <div className="sticky top-0 z-20 bg-stone-950/95 backdrop-blur-md border-b border-stone-800">
-        <div className="px-4 pt-safe pt-4 pb-3 flex items-center justify-between"
+        <div className="px-4 pb-3 flex items-center justify-between"
              style={{ paddingTop: `max(1rem, env(safe-area-inset-top))` }}>
           <div>
             <h1 className="font-display text-2xl font-bold text-stone-100">HouseHunter</h1>
-            <p className="text-stone-500 text-xs mt-0.5">
-              {toured.length} toured · {pending.length} pending
-            </p>
+            {checkStatus === 'checking' && (
+              <p className="text-amber-500 text-xs mt-0.5 flex items-center gap-1">
+                <RefreshCw size={10} className="animate-spin" /> Checking listings for sold status...
+              </p>
+            )}
+            {checkStatus === 'done' && (
+              <p className="text-green-500 text-xs mt-0.5">✓ All listings current</p>
+            )}
+            {!checkStatus && (
+              <p className="text-stone-500 text-xs mt-0.5">
+                {ranked.length} ranked · {reviewed.length} to tour · {newHouses.length} new
+              </p>
+            )}
           </div>
           <div className="flex items-center gap-2">
+            {/* History button with badge */}
             <button
-              onClick={() => navigate('/shortcut-setup')}
-              className="bg-stone-800 text-stone-300 p-2.5 rounded-xl border border-stone-700 active:scale-95 transition-transform"
-              title="iOS Shortcut Setup"
+              onClick={handleHistoryClick}
+              className="relative bg-stone-800 text-stone-300 p-2.5 rounded-xl border border-stone-700 active:scale-95 transition-transform"
             >
-              <Smartphone size={18} />
+              <History size={18} />
+              {hasUnreadHistory && (
+                <span className="absolute -top-1 -right-1 w-3 h-3 bg-amber-500 rounded-full border-2 border-stone-950" />
+              )}
             </button>
-          {toured.length > 1 && (
+            {ranked.length > 1 && (
               <button
                 onClick={() => navigate('/ranking')}
                 className="bg-stone-800 text-stone-300 p-2.5 rounded-xl border border-stone-700 active:scale-95 transition-transform"
-                title="Adjust Rankings"
               >
                 <BarChart2 size={18} />
               </button>
             )}
             <button
+              onClick={() => navigate('/shortcut-setup')}
+              className="bg-stone-800 text-stone-300 p-2.5 rounded-xl border border-stone-700 active:scale-95 transition-transform"
+            >
+              <Smartphone size={18} />
+            </button>
+            <button
               onClick={() => navigate('/add')}
               className="btn-primary flex items-center gap-2 py-2.5 px-4"
             >
               <Plus size={18} />
-              <span>Add House</span>
+              <span>Add</span>
             </button>
           </div>
         </div>
       </div>
 
       <div className="px-4 pb-8 space-y-8 pt-4">
-        {/* Toured List */}
-        <section>
-          <div className="flex items-center gap-2 mb-3">
-            <Trophy size={16} className="text-amber-500" />
-            <h2 className="section-title">Ranked Houses</h2>
-            {displayToured.length > 0 && (
-              <span className="text-stone-600 text-sm">· drag to reorder</span>
-            )}
-          </div>
-
-          {displayToured.length === 0 ? (
+        {/* Ranked / Toured */}
+        <SectionHeader icon={Trophy} label="Ranked Houses" count={displayRanked.length} color="text-amber-500">
+          {displayRanked.length === 0 ? (
             <div className="card p-8 text-center">
               <Trophy size={32} className="text-stone-700 mx-auto mb-3" />
               <p className="text-stone-500 text-sm">No toured houses yet.</p>
               <p className="text-stone-600 text-xs mt-1">Tour a house to start ranking.</p>
             </div>
           ) : (
-            <DndContext
-              sensors={sensors}
-              collisionDetection={closestCenter}
-              onDragStart={handleDragStart}
-              onDragEnd={handleDragEnd}
-            >
-              <SortableContext
-                items={displayToured.map(h => h.id)}
-                strategy={verticalListSortingStrategy}
-              >
+            <DndContext sensors={sensors} collisionDetection={closestCenter}
+              onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+              <SortableContext items={displayRanked.map(h => h.id)} strategy={verticalListSortingStrategy}>
                 <div className="space-y-2">
-                  {displayToured.map((house, i) => (
+                  {displayRanked.map((house, i) => (
                     <SortableHouseCard key={house.id} house={house} rank={i + 1} />
                   ))}
                 </div>
               </SortableContext>
-
               <DragOverlay>
-                {activeHouse && (
-                  <div className="opacity-90 shadow-2xl rotate-1">
-                    <HouseCard house={activeHouse} />
-                  </div>
-                )}
+                {activeHouse && <div className="opacity-90 shadow-2xl rotate-1"><HouseCard house={activeHouse} /></div>}
               </DragOverlay>
             </DndContext>
           )}
-        </section>
+        </SectionHeader>
 
-        {/* Pending List */}
-        <section>
-          <div className="flex items-center gap-2 mb-3">
-            <Clock size={16} className="text-stone-500" />
-            <h2 className="section-title text-stone-400">To Be Toured</h2>
-          </div>
+        {/* To Be Toured (Reviewed) */}
+        <SectionHeader icon={Clock} label="To Be Toured" count={reviewed.length} color="text-blue-400">
+          {reviewed.length === 0 ? (
+            <div className="card p-6 text-center">
+              <Clock size={28} className="text-stone-700 mx-auto mb-2" />
+              <p className="text-stone-500 text-sm">No houses scheduled for tours yet.</p>
+              <p className="text-stone-600 text-xs mt-1">Mark a house as Reviewed to add it here.</p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {reviewed.map(house => <HouseCard key={house.id} house={house} />)}
+            </div>
+          )}
+        </SectionHeader>
 
-          {pending.length === 0 ? (
-            <div className="card p-8 text-center">
-              <Home size={32} className="text-stone-700 mx-auto mb-3" />
-              <p className="text-stone-500 text-sm">No houses queued.</p>
-              <button
-                onClick={() => navigate('/add')}
-                className="text-amber-500 text-sm mt-2 underline underline-offset-2"
-              >
+        {/* To Be Reviewed (New) */}
+        <SectionHeader icon={Eye} label="To Be Reviewed" count={newHouses.length} color="text-stone-400">
+          {newHouses.length === 0 ? (
+            <div className="card p-6 text-center">
+              <Home size={28} className="text-stone-700 mx-auto mb-2" />
+              <p className="text-stone-500 text-sm">No new houses.</p>
+              <button onClick={() => navigate('/add')} className="text-amber-500 text-sm mt-2 underline underline-offset-2">
                 Add your first house
               </button>
             </div>
           ) : (
             <div className="space-y-2">
-              {pending.map(house => (
-                <HouseCard key={house.id} house={house} />
-              ))}
+              {newHouses.map(house => <HouseCard key={house.id} house={house} />)}
             </div>
           )}
-        </section>
+        </SectionHeader>
+
+        {/* Rejected */}
+        <SectionHeader icon={ThumbsDown} label="Rejected" count={rejected.length} color="text-stone-600" defaultOpen={false}>
+          {rejected.length === 0 ? (
+            <p className="text-stone-600 text-sm">No rejected houses.</p>
+          ) : (
+            <div className="space-y-2">
+              {rejected.map(house => <HouseCard key={house.id} house={house} />)}
+            </div>
+          )}
+        </SectionHeader>
+
+        {/* Sold */}
+        <SectionHeader icon={TrendingDown} label="Sold / Off Market" count={sold.length} color="text-red-500" defaultOpen={false}>
+          {sold.length === 0 ? (
+            <p className="text-stone-600 text-sm">No sold houses detected.</p>
+          ) : (
+            <div className="space-y-2">
+              {sold.map(house => <HouseCard key={house.id} house={house} />)}
+            </div>
+          )}
+        </SectionHeader>
       </div>
     </div>
   )

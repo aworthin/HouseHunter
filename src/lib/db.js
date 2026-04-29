@@ -1,11 +1,33 @@
 // src/lib/db.js
 import {
-  collection, doc, addDoc, updateDoc, deleteDoc,
-  onSnapshot, query, orderBy, serverTimestamp
+  collection, doc, addDoc, setDoc, updateDoc, deleteDoc,
+  onSnapshot, query, orderBy, limit, serverTimestamp, getDocs, where
 } from 'firebase/firestore'
 import { db } from './firebase'
+import { ulid } from './ulid'
+import { getUserName } from './userPrefs'
 
 const HOUSES_COL = 'houses'
+const HISTORY_COL = 'history'
+
+// ─── Status constants ───────────────────────────────────────────────
+export const STATUS = {
+  NEW: 'new',
+  REVIEWED: 'reviewed',
+  TOURED: 'toured',
+  REJECTED: 'rejected',
+  SOLD: 'sold',
+}
+
+export const STATUS_LABELS = {
+  new: 'New',
+  reviewed: 'Reviewed',
+  toured: 'Toured',
+  rejected: 'Rejected',
+  sold: 'Sold',
+}
+
+// ─── Houses ─────────────────────────────────────────────────────────
 
 export function subscribeToHouses(callback) {
   const q = query(collection(db, HOUSES_COL), orderBy('addedAt', 'desc'))
@@ -16,29 +38,123 @@ export function subscribeToHouses(callback) {
 }
 
 export async function addHouse(data) {
-  return addDoc(collection(db, HOUSES_COL), {
+  const ref = await addDoc(collection(db, HOUSES_COL), {
     ...data,
-    status: 'pending',
+    status: STATUS.NEW,
     rank: null,
     addedAt: serverTimestamp(),
-    updatedAt: serverTimestamp()
+    updatedAt: serverTimestamp(),
+    zillowLastChecked: serverTimestamp(),
   })
+  await addHistory({
+    houseId: ref.id,
+    address: data.address,
+    event: 'added',
+    toStatus: STATUS.NEW,
+  })
+  return ref
 }
 
 export async function updateHouse(id, data) {
   return updateDoc(doc(db, HOUSES_COL, id), {
     ...data,
-    updatedAt: serverTimestamp()
+    updatedAt: serverTimestamp(),
   })
 }
 
-export async function deleteHouse(id) {
-  return deleteDoc(doc(db, HOUSES_COL, id))
+export async function changeStatus(house, newStatus, note) {
+  const oldStatus = house.status
+  await updateDoc(doc(db, HOUSES_COL, house.id), {
+    status: newStatus,
+    updatedAt: serverTimestamp(),
+    ...(newStatus !== STATUS.TOURED && oldStatus === STATUS.TOURED ? { rank: null } : {}),
+  })
+  await addHistory({
+    houseId: house.id,
+    address: house.address,
+    event: 'status_changed',
+    fromStatus: oldStatus,
+    toStatus: newStatus,
+    note: note || null,
+  })
+}
+
+export async function deleteHouse(house) {
+  await deleteDoc(doc(db, HOUSES_COL, house.id))
+  await addHistory({
+    houseId: house.id,
+    address: house.address,
+    event: 'deleted',
+    fromStatus: house.status,
+  })
 }
 
 export async function updateRanks(rankedIds) {
   const updates = rankedIds.map((id, index) =>
-    updateDoc(doc(db, HOUSES_COL, id), { rank: index + 1, updatedAt: serverTimestamp() })
+    updateDoc(doc(db, HOUSES_COL, id), {
+      rank: index + 1,
+      updatedAt: serverTimestamp(),
+    })
   )
-  return Promise.all(updates)
+  await Promise.all(updates)
+  await addHistory({
+    houseId: null,
+    address: null,
+    event: 'ranked',
+    note: `Rankings updated for ${rankedIds.length} houses`,
+  })
+}
+
+export async function markZillowChecked(id, isSold) {
+  const updates = { zillowLastChecked: serverTimestamp() }
+  if (isSold) {
+    updates.status = STATUS.SOLD
+    updates.updatedAt = serverTimestamp()
+    updates.soldDetectedAt = serverTimestamp()
+  }
+  await updateDoc(doc(db, HOUSES_COL, id), updates)
+}
+
+export async function findHouseByZpid(zpid) {
+  const q = query(collection(db, HOUSES_COL), where('zpid', '==', String(zpid)))
+  const snap = await getDocs(q)
+  if (snap.empty) return null
+  return { id: snap.docs[0].id, ...snap.docs[0].data() }
+}
+
+// ─── History ─────────────────────────────────────────────────────────
+
+export async function addHistory({ houseId, address, event, fromStatus, toStatus, note }) {
+  const id = ulid()
+  const userName = getUserName() || 'Unknown'
+  await setDoc(doc(db, HISTORY_COL, id), {
+    id,
+    houseId: houseId || null,
+    address: address || null,
+    event,
+    fromStatus: fromStatus || null,
+    toStatus: toStatus || null,
+    note: note || null,
+    userName,
+    timestamp: serverTimestamp(),
+  })
+  return id
+}
+
+export function subscribeToHistory(callback, limitCount) {
+  const q = query(
+    collection(db, HISTORY_COL),
+    orderBy('id', 'desc'),
+    limit(limitCount || 200)
+  )
+  return onSnapshot(q, (snap) => {
+    callback(snap.docs.map(d => ({ ...d.data() })))
+  })
+}
+
+export function subscribeToLatestHistoryId(callback) {
+  const q = query(collection(db, HISTORY_COL), orderBy('id', 'desc'), limit(1))
+  return onSnapshot(q, (snap) => {
+    callback(snap.empty ? null : snap.docs[0].data().id)
+  })
 }

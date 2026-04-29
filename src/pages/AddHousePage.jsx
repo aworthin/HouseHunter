@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { ArrowLeft, Link2, Loader2, AlertCircle, CheckCircle } from '../icons'
-import { addHouse } from '../lib/db'
+import { addHouse, findHouseByZpid } from '../lib/db'
 
 // Netlify function - uses RapidAPI private-zillow (no IP blocking issues)
 const SCRAPER_URL = '/api/scrape'
@@ -96,6 +96,7 @@ export default function AddHousePage() {
     try {
       await addHouse({
         zillowUrl: form.zillowUrl,
+        zpid: form.zpid || null,
         address: form.address,
         price: form.price,
         beds: form.beds,
@@ -105,9 +106,18 @@ export default function AddHousePage() {
         yearBuilt: form.yearBuilt,
         propertyType: form.propertyType,
         description: form.description,
-        imageUrls: form.imageUrls,
+        imageUrls: form.imageUrls || [],
         floorPlanUrl: form.floorPlanUrl,
         notes: form.notes,
+        garage: form.garage || '',
+        flooring: form.flooring || '',
+        foundation: form.foundation || '',
+        stories: form.stories || '',
+        materials: form.materials || '',
+        roof: form.roof || '',
+        hoaFee: form.hoaFee || '',
+        heating: form.heating || '',
+        cooling: form.cooling || '',
       })
       navigate('/')
     } catch (err) {

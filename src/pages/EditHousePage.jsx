@@ -23,6 +23,11 @@ export default function EditHousePage() {
     floorPlanUrl: house.floorPlanUrl || '',
     notes: house.notes || '',
     zillowUrl: house.zillowUrl || '',
+    garage: house.garage || '',
+    flooring: house.flooring || '',
+    foundation: house.foundation || '',
+    stories: house.stories || '',
+    hoaFee: house.hoaFee || '',
   } : {})
 
   const [saving, setSaving] = useState(false)
