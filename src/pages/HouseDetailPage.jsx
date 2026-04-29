@@ -8,6 +8,7 @@ import {
 import { useHouses } from '../App'
 import { deleteHouse, changeStatus, updateHouse, addHistory, STATUS, STATUS_LABELS } from '../lib/db'
 import ImageGallery from '../components/ImageGallery'
+import AddressActionSheet from '../components/AddressActionSheet'
 import ConfirmDialog from '../components/ConfirmDialog'
 
 function InfoRow({ icon: Icon, label, value }) {
@@ -42,6 +43,7 @@ export default function HouseDetailPage() {
   const [acting, setActing] = useState(false)
   const [refreshing, setRefreshing] = useState(false)
   const [refreshMsg, setRefreshMsg] = useState(null)
+  const [showAddressSheet, setShowAddressSheet] = useState(false)
 
   const house = houses.find(h => h.id === id)
 
@@ -184,10 +186,13 @@ export default function HouseDetailPage() {
           {house.price && (
             <p className="text-amber-400 font-semibold text-2xl font-display mb-1">{house.price}</p>
           )}
-          <div className="flex items-start gap-2">
+          <button
+            className="flex items-start gap-2 active:opacity-70 transition-opacity"
+            onClick={() => house.address && setShowAddressSheet(true)}
+          >
             <MapPin size={14} className="text-stone-500 mt-0.5 shrink-0" />
-            <p className="text-stone-300 text-sm">{house.address || 'Address not set'}</p>
-          </div>
+            <p className="text-stone-300 text-sm underline-offset-2">{house.address || 'Address not set'}</p>
+          </button>
         </div>
 
         {/* Quick stats */}
@@ -350,6 +355,13 @@ export default function HouseDetailPage() {
           confirmLabel="Delete"
         />
       )}
+      {showAddressSheet && (
+        <AddressActionSheet
+          address={house.address}
+          onClose={() => setShowAddressSheet(false)}
+        />
+      )}
+
       {confirmReject && (
         <ConfirmDialog
           title="Reject this house?"

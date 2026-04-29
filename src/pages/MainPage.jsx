@@ -7,7 +7,7 @@ import {
 import { SortableContext, verticalListSortingStrategy, arrayMove } from '@dnd-kit/sortable'
 import {
   Plus, Trophy, Clock, BarChart2, Smartphone, History,
-  Eye, ThumbsDown, TrendingDown, RefreshCw, Home
+  Eye, ThumbsDown, TrendingDown, RefreshCw, Home, Copy
 } from '../icons'
 import { useHouses } from '../App'
 import { updateRanks } from '../lib/db'
@@ -16,23 +16,60 @@ import SortableHouseCard from '../components/SortableHouseCard'
 import HouseCard from '../components/HouseCard'
 import LoadingSpinner from '../components/LoadingSpinner'
 
-function SectionHeader({ icon: Icon, label, count, color = 'text-stone-400', defaultOpen = true, children }) {
+function SectionHeader({ icon: Icon, label, count, color = 'text-stone-400', defaultOpen = true, houses = [], children }) {
   const [open, setOpen] = useState(defaultOpen)
+  const [copied, setCopied] = useState(false)
+
+  function exportAddresses(e) {
+    e.stopPropagation()
+    const addresses = houses
+      .filter(h => h.address)
+      .map(h => h.address)
+      .join('\n')
+    if (!addresses) return
+    navigator.clipboard.writeText(addresses)
+      .catch(() => {
+        const el = document.createElement('textarea')
+        el.value = addresses
+        document.body.appendChild(el)
+        el.select()
+        document.execCommand('copy')
+        document.body.removeChild(el)
+      })
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
   return (
     <section>
-      <button
-        onClick={() => setOpen(o => !o)}
-        className="flex items-center gap-2 mb-3 w-full group"
-      >
-        <Icon size={16} className={color} />
-        <h2 className={`font-display text-lg font-semibold ${color === 'text-stone-400' ? 'text-stone-100' : color.replace('text-', 'text-')}`}>
-          {label}
-        </h2>
+      <div className="flex items-center gap-2 mb-3">
+        <button
+          onClick={() => setOpen(o => !o)}
+          className="flex items-center gap-2 flex-1 group"
+        >
+          <Icon size={16} className={color} />
+          <h2 className={`font-display text-lg font-semibold ${color === 'text-stone-400' ? 'text-stone-100' : color}`}>
+            {label}
+          </h2>
+          {count > 0 && (
+            <span className="text-xs text-stone-600 bg-stone-800 px-2 py-0.5 rounded-full ml-1">{count}</span>
+          )}
+          <span className="text-stone-600 text-xs ml-auto">{open ? '▲' : '▼'}</span>
+        </button>
         {count > 0 && (
-          <span className="text-xs text-stone-600 bg-stone-800 px-2 py-0.5 rounded-full ml-1">{count}</span>
+          <button
+            onClick={exportAddresses}
+            className={`flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg border transition-all active:scale-95 shrink-0 ${
+              copied
+                ? 'bg-green-900/50 text-green-400 border-green-800'
+                : 'bg-stone-800 text-stone-400 border-stone-700'
+            }`}
+          >
+            <Copy size={11} />
+            {copied ? 'Copied!' : 'Copy'}
+          </button>
         )}
-        <span className="text-stone-600 text-xs ml-auto">{open ? '▲' : '▼'}</span>
-      </button>
+      </div>
       {open && children}
     </section>
   )
@@ -140,7 +177,7 @@ export default function MainPage() {
 
       <div className="px-4 pb-8 space-y-8 pt-4">
         {/* Ranked / Toured */}
-        <SectionHeader icon={Trophy} label="Ranked Houses" count={displayRanked.length} color="text-amber-500">
+        <SectionHeader icon={Trophy} label="Ranked Houses" count={displayRanked.length} color="text-amber-500" houses={displayRanked}>
           {displayRanked.length === 0 ? (
             <div className="card p-8 text-center">
               <Trophy size={32} className="text-stone-700 mx-auto mb-3" />
@@ -165,7 +202,7 @@ export default function MainPage() {
         </SectionHeader>
 
         {/* To Be Toured (Reviewed) */}
-        <SectionHeader icon={Clock} label="To Be Toured" count={reviewed.length} color="text-blue-400">
+        <SectionHeader icon={Clock} label="To Be Toured" count={reviewed.length} color="text-blue-400" houses={reviewed}>
           {reviewed.length === 0 ? (
             <div className="card p-6 text-center">
               <Clock size={28} className="text-stone-700 mx-auto mb-2" />
@@ -180,7 +217,7 @@ export default function MainPage() {
         </SectionHeader>
 
         {/* To Be Reviewed (New) */}
-        <SectionHeader icon={Eye} label="To Be Reviewed" count={newHouses.length} color="text-stone-400">
+        <SectionHeader icon={Eye} label="To Be Reviewed" count={newHouses.length} color="text-stone-400" houses={newHouses}>
           {newHouses.length === 0 ? (
             <div className="card p-6 text-center">
               <Home size={28} className="text-stone-700 mx-auto mb-2" />
@@ -197,7 +234,7 @@ export default function MainPage() {
         </SectionHeader>
 
         {/* Rejected */}
-        <SectionHeader icon={ThumbsDown} label="Rejected" count={rejected.length} color="text-stone-600" defaultOpen={false}>
+        <SectionHeader icon={ThumbsDown} label="Rejected" count={rejected.length} color="text-stone-600" defaultOpen={false} houses={rejected}>
           {rejected.length === 0 ? (
             <p className="text-stone-600 text-sm">No rejected houses.</p>
           ) : (
@@ -208,7 +245,7 @@ export default function MainPage() {
         </SectionHeader>
 
         {/* Sold */}
-        <SectionHeader icon={TrendingDown} label="Sold / Off Market" count={sold.length} color="text-red-500" defaultOpen={false}>
+        <SectionHeader icon={TrendingDown} label="Sold / Off Market" count={sold.length} color="text-red-500" defaultOpen={false} houses={sold}>
           {sold.length === 0 ? (
             <p className="text-stone-600 text-sm">No sold houses detected.</p>
           ) : (
