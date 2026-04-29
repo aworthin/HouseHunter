@@ -172,12 +172,27 @@ function formatProperty(prop, fallbackAddress) {
   );
 
   const address = formatAddress(prop, fallbackAddress);
+
+  // ── Debug logging for market status ───────────────────────────
+  console.log("=== MARKET STATUS CHECK ===");
+  console.log("homeStatus:", homeStatus);
+  console.log("bedrooms:", prop.bedrooms);
+  console.log("bathrooms:", prop.bathrooms);
+  console.log("livingAreaValue:", prop.livingAreaValue);
+  console.log("mlsId:", prop.attributionInfo?.mlsId);
+  console.log("isSold:", isSold);
+  console.log("isOffMarket:", isOffMarket);
+  console.log("===========================");
+
   if (isSold) {
+    console.log("RESULT: sold");
     return { _sold: true, homeStatus, address };
   }
   if (isOffMarket) {
+    console.log("RESULT: off-market");
     return { _offMarket: true, homeStatus, address };
   }
+  console.log("RESULT: active listing");
 
   // ── Address ────────────────────────────────────────────────────
   const fullAddress = formatAddress(prop, fallbackAddress);
