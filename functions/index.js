@@ -4,12 +4,17 @@ const { setGlobalOptions } = require("firebase-functions/v2");
 setGlobalOptions({ maxInstances: 10 });
 
 exports.scrape = onRequest(
-  { cors: true, timeoutSeconds: 30 },
+  { 
+    cors: ["https://bw-house-hunter.netlify.app", "http://localhost:5173", "*"],
+    timeoutSeconds: 30 
+  },
   async (req, res) => {
+    // Explicitly set CORS headers on every response
+    res.set("Access-Control-Allow-Origin", "*");
+    res.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+    res.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
+
     if (req.method === "OPTIONS") {
-      res.set("Access-Control-Allow-Origin", "*");
-      res.set("Access-Control-Allow-Methods", "POST, OPTIONS");
-      res.set("Access-Control-Allow-Headers", "Content-Type");
       res.status(204).send("");
       return;
     }
@@ -89,8 +94,7 @@ async function scrapeZillow(url) {
       const response = await fetch(url, {
         headers: {
           "User-Agent": ua,
-          Accept:
-            "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+          Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
           "Accept-Language": "en-US,en;q=0.9",
           "Cache-Control": "no-cache",
           Pragma: "no-cache",
@@ -104,38 +108,21 @@ async function scrapeZillow(url) {
 
       console.log("HTTP status:", response.status);
 
-      if (response.status === 403) {
-        lastError = "Zillow returned 403 Forbidden (IP blocked)";
-        continue;
-      }
-      if (response.status === 429) {
-        lastError = "Zillow returned 429 Too Many Requests";
-        continue;
-      }
-      if (response.status !== 200) {
-        lastError = `Zillow returned HTTP ${response.status}`;
-        continue;
-      }
+      if (response.status === 403) { lastError = "Zillow returned 403 Forbidden (IP blocked)"; continue; }
+      if (response.status === 429) { lastError = "Zillow returned 429 Too Many Requests"; continue; }
+      if (response.status !== 200) { lastError = `Zillow returned HTTP ${response.status}`; continue; }
 
       const html = await response.text();
       console.log("HTML length:", html.length);
       console.log("Has __NEXT_DATA__:", html.includes("__NEXT_DATA__"));
       console.log("Has captcha:", html.includes("captcha"));
 
-      if (html.length < 5000) {
-        lastError = `Page too short (${html.length} chars) - likely bot detection`;
-        continue;
-      }
-
-      if (html.includes("captcha") || html.includes("cf-challenge")) {
-        lastError = "Zillow CAPTCHA / bot detection page";
-        continue;
-      }
-
+      if (html.length < 5000) { lastError = `Page too short (${html.length} chars)`; continue; }
+      if (html.includes("captcha") || html.includes("cf-challenge")) { lastError = "Bot detection page"; continue; }
       if (!html.includes("__NEXT_DATA__")) {
         const titleMatch = html.match(/<title>(.*?)<\/title>/);
-        console.log("Page title:", titleMatch?.[1] || "no title found");
-        lastError = "No __NEXT_DATA__ found - Zillow may have blocked request";
+        console.log("Page title:", titleMatch?.[1] || "no title");
+        lastError = "No __NEXT_DATA__ found";
         continue;
       }
 
@@ -150,9 +137,7 @@ async function scrapeZillow(url) {
 }
 
 function parseZillowHtml(html) {
-  const nextDataMatch = html.match(
-    /<script id="__NEXT_DATA__" type="application\/json">([\s\S]*?)<\/script>/
-  );
+  const nextDataMatch = html.match(/<script id="__NEXT_DATA__" type="application\/json">([\s\S]*?)<\/script>/);
   if (!nextDataMatch) throw new Error("Could not extract __NEXT_DATA__");
 
   const nextData = JSON.parse(nextDataMatch[1]);
@@ -161,80 +146,40 @@ function parseZillowHtml(html) {
 
   let property = null;
 
-  // Path 1: gdpClientCache
   const gdpClientCache = props?.componentProps?.gdpClientCache;
   if (gdpClientCache) {
     try {
       const cacheData = JSON.parse(gdpClientCache);
       for (const key of Object.keys(cacheData)) {
-        if (cacheData[key]?.property) {
-          property = cacheData[key].property;
-          console.log("Found property via gdpClientCache");
-          break;
-        }
+        if (cacheData[key]?.property) { property = cacheData[key].property; console.log("Found via gdpClientCache"); break; }
       }
-    } catch (e) {
-      console.log("gdpClientCache parse failed:", e.message);
-    }
+    } catch (e) { console.log("gdpClientCache failed:", e.message); }
   }
 
-  // Path 2: initialReduxState
-  if (!property) {
-    property = props?.initialReduxState?.gdp?.propertyData;
-    if (property) console.log("Found property via initialReduxState");
-  }
-
-  // Path 3: direct props
-  if (!property) {
-    property = props?.property || props?.homeDetails || props?.listingData;
-    if (property) console.log("Found property via direct props");
-  }
+  if (!property) { property = props?.initialReduxState?.gdp?.propertyData; if (property) console.log("Found via initialReduxState"); }
+  if (!property) { property = props?.property || props?.homeDetails || props?.listingData; if (property) console.log("Found via direct props"); }
 
   if (!property) {
-    console.error(
-      "Could not find property. pageProps sample:",
-      JSON.stringify(props).substring(0, 500)
-    );
-    throw new Error("Property data not found in Zillow page structure");
+    console.error("Property not found. pageProps sample:", JSON.stringify(props).substring(0, 500));
+    throw new Error("Property data not found in Zillow page");
   }
-
-  console.log("Property keys:", Object.keys(property).slice(0, 10).join(", "));
 
   const imageUrls = extractImages(property);
   const price = property.price
     ? `$${Number(property.price).toLocaleString()}`
-    : property.zestimate
-    ? `$${Number(property.zestimate).toLocaleString()} (Zestimate)`
-    : "";
+    : property.zestimate ? `$${Number(property.zestimate).toLocaleString()} (Zestimate)` : "";
 
   return {
-    address: [
-      property.streetAddress,
-      property.city,
-      property.state,
-      property.zipcode,
-    ]
-      .filter(Boolean)
-      .join(", "),
+    address: [property.streetAddress, property.city, property.state, property.zipcode].filter(Boolean).join(", "),
     price,
     beds: property.bedrooms?.toString() || "",
     baths: property.bathrooms?.toString() || "",
-    sqft: property.livingArea
-      ? Number(property.livingArea).toLocaleString()
-      : "",
-    lotSize: property.lotAreaValue
-      ? `${property.lotAreaValue} ${property.lotAreaUnit || "sqft"}`
-      : "",
+    sqft: property.livingArea ? Number(property.livingArea).toLocaleString() : "",
+    lotSize: property.lotAreaValue ? `${property.lotAreaValue} ${property.lotAreaUnit || "sqft"}` : "",
     yearBuilt: property.yearBuilt?.toString() || "",
-    propertyType: (
-      property.propertyTypeDimension ||
-      property.homeType ||
-      ""
-    )
+    propertyType: (property.propertyTypeDimension || property.homeType || "")
       .replace(/_/g, " ")
-      .replace(/\w\S*/g, (w) =>
-        w.charAt(0).toUpperCase() + w.substr(1).toLowerCase()
-      ),
+      .replace(/\w\S*/g, (w) => w.charAt(0).toUpperCase() + w.substr(1).toLowerCase()),
     description: property.description || "",
     imageUrls,
   };
@@ -243,22 +188,11 @@ function parseZillowHtml(html) {
 function extractImages(property) {
   const images = [];
   if (property.hiResImageLink) images.push(property.hiResImageLink);
-  for (const photos of [
-    property.originalPhotos,
-    property.photos,
-    property.responsivePhotos,
-    property.hugePhotos,
-  ]) {
+  for (const photos of [property.originalPhotos, property.photos, property.responsivePhotos, property.hugePhotos]) {
     if (!Array.isArray(photos)) continue;
     for (const photo of photos) {
-      const url =
-        typeof photo === "string"
-          ? photo
-          : photo?.url ||
-            photo?.mixedSources?.jpeg?.[0]?.url ||
-            photo?.mixedSources?.webp?.[0]?.url ||
-            photo?.src ||
-            null;
+      const url = typeof photo === "string" ? photo
+        : photo?.url || photo?.mixedSources?.jpeg?.[0]?.url || photo?.mixedSources?.webp?.[0]?.url || photo?.src || null;
       if (url && !images.includes(url)) images.push(url);
     }
     if (images.length >= 5) break;
