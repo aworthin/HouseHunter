@@ -218,14 +218,6 @@ function formatProperty(prop, fallbackAddress) {
   // ── Stories ────────────────────────────────────────────────────
   const stories = reso.stories ? `${reso.stories}` : (reso.levels || "");
 
-  // ── Construction materials ─────────────────────────────────────
-  const materials = Array.isArray(reso.constructionMaterials) && reso.constructionMaterials.length
-    ? reso.constructionMaterials.join(", ")
-    : "";
-
-  // ── Roof ───────────────────────────────────────────────────────
-  const roof = reso.roofType || "";
-
   // ── Images ────────────────────────────────────────────────────
   const imageUrls = extractImages(prop);
 
@@ -246,16 +238,10 @@ function formatProperty(prop, fallbackAddress) {
     imageUrls,
     homeStatus,
     zpid: prop.zpid ? String(prop.zpid) : null,
-    // New fields
     garage,
     flooring,
     foundation,
     stories,
-    materials,
-    roof,
-    hoaFee: reso.hoaFee || (prop.monthlyHoaFee ? `$${prop.monthlyHoaFee}/mo` : ""),
-    heating: Array.isArray(reso.heating) ? reso.heating.join(", ") : "",
-    cooling: Array.isArray(reso.cooling) ? reso.cooling.join(", ") : "",
   };
 }
 

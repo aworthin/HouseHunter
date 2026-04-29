@@ -137,11 +137,6 @@ export default function HouseDetailPage() {
         flooring: data.flooring || house.flooring,
         foundation: data.foundation || house.foundation,
         stories: data.stories || house.stories,
-        materials: data.materials || house.materials,
-        roof: data.roof || house.roof,
-        hoaFee: data.hoaFee || house.hoaFee,
-        heating: data.heating || house.heating,
-        cooling: data.cooling || house.cooling,
         zpid: data.zpid || zpid || house.zpid || null,
         zillowLastChecked: new Date(),
       })
@@ -213,11 +208,6 @@ export default function HouseDetailPage() {
           <InfoRow icon={Layers} label="Flooring" value={house.flooring} />
           <InfoRow icon={Home} label="Foundation" value={house.foundation} />
           <InfoRow icon={Home} label="Stories" value={house.stories} />
-          <InfoRow icon={Tag} label="Construction" value={house.materials} />
-          <InfoRow icon={Home} label="Roof" value={house.roof} />
-          <InfoRow icon={Tag} label="HOA Fee" value={house.hoaFee} />
-          <InfoRow icon={Tag} label="Heating" value={house.heating} />
-          <InfoRow icon={Tag} label="Cooling" value={house.cooling} />
         </div>
 
         {/* Description */}
