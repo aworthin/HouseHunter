@@ -43,7 +43,7 @@
 //   nearbyHomes[] (nearby properties)
 // }
 
-const RAPIDAPI_KEY = "697dd9b3c6msh463d183612ebbf7p1eb708jsn558cc5817d68";
+const RAPIDAPI_KEY = process.env.RAPIDAPI_KEY || "";
 const RAPIDAPI_HOST = "private-zillow.p.rapidapi.com";
 
 export const handler = async (event) => {
