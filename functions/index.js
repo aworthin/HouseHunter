@@ -128,14 +128,27 @@ async function searchByAddress(address) {
 
       const json = await response.json();
       console.log("Search result keys:", Object.keys(json).join(", "));
-      console.log("resultsCount:", json.resultsCount);
+      console.log("resultsCount:", JSON.stringify(json.resultsCount));
+      console.log("searchResults keys:", JSON.stringify(Object.keys(json.searchResults || {})));
+      console.log("Full response sample:", JSON.stringify(json).substring(0, 800));
 
-      const listings = json?.searchResults?.listResults || json?.results || json?.data || [];
+      // Try every possible path to listings
+      const listings =
+        json?.searchResults?.listResults ||
+        json?.searchResults?.results ||
+        json?.searchResults?.mapResults ||
+        json?.results ||
+        json?.data ||
+        json?.listings ||
+        (Array.isArray(json) ? json : []);
       console.log("Listings found:", listings.length);
 
       if (listings.length > 0) {
         return formatProperty(listings[0]);
       }
+
+      // Wait 1 second before next strategy to avoid rate limit
+      await new Promise(r => setTimeout(r, 1000));
     } catch (e) {
       console.log("Strategy failed:", e.message);
     }
