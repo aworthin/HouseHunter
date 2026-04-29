@@ -3,10 +3,10 @@ import { useNavigate, useParams } from 'react-router-dom'
 import {
   ArrowLeft, Edit2, MapPin, Bed, Bath, Square, Calendar,
   ExternalLink, Trash2, ClipboardList, Trophy, Home,
-  Eye, ThumbsDown, Car, Layers, Tag
+  Eye, ThumbsDown, Car, Layers, Tag, RefreshCw
 } from '../icons'
 import { useHouses } from '../App'
-import { deleteHouse, changeStatus, STATUS, STATUS_LABELS } from '../lib/db'
+import { deleteHouse, changeStatus, updateHouse, addHistory, STATUS, STATUS_LABELS } from '../lib/db'
 import ImageGallery from '../components/ImageGallery'
 import ConfirmDialog from '../components/ConfirmDialog'
 
@@ -40,6 +40,8 @@ export default function HouseDetailPage() {
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [confirmReject, setConfirmReject] = useState(false)
   const [acting, setActing] = useState(false)
+  const [refreshing, setRefreshing] = useState(false)
+  const [refreshMsg, setRefreshMsg] = useState(null)
 
   const house = houses.find(h => h.id === id)
 
@@ -75,6 +77,78 @@ export default function HouseDetailPage() {
     setActing(true)
     await changeStatus(house, STATUS.NEW, 'Moved back from Rejected')
     setActing(false)
+  }
+
+  async function handleRefreshFromZillow() {
+    if (!house.zillowUrl && !house.zpid) {
+      setRefreshMsg({ type: 'error', text: 'No Zillow URL saved for this house.' })
+      return
+    }
+    setRefreshing(true)
+    setRefreshMsg(null)
+    try {
+      const url = house.zillowUrl ||
+        `https://www.zillow.com/homedetails/${house.zpid}_zpid/`
+      const res = await fetch('/api/scrape', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url })
+      })
+      const data = await res.json()
+
+      if (data._sold) {
+        await changeStatus(house, STATUS.SOLD, 'Marked sold via Zillow refresh')
+        setRefreshMsg({ type: 'sold', text: 'This property has been sold on Zillow. Status updated to Sold.' })
+        return
+      }
+      if (data._offMarket) {
+        setRefreshMsg({ type: 'warning', text: `Property is off-market (${data.homeStatus}). Data not updated.` })
+        return
+      }
+      if (data.error && !data._partial) {
+        setRefreshMsg({ type: 'error', text: `Could not reach Zillow: ${data.error}` })
+        return
+      }
+
+      // Update all Zillow-sourced fields
+      await updateHouse(id, {
+        address: data.address || house.address,
+        price: data.price || house.price,
+        beds: data.beds || house.beds,
+        baths: data.baths || house.baths,
+        sqft: data.sqft || house.sqft,
+        lotSize: data.lotSize || house.lotSize,
+        yearBuilt: data.yearBuilt || house.yearBuilt,
+        propertyType: data.propertyType || house.propertyType,
+        description: data.description || house.description,
+        imageUrls: data.imageUrls?.length ? data.imageUrls : house.imageUrls,
+        garage: data.garage || house.garage,
+        flooring: data.flooring || house.flooring,
+        foundation: data.foundation || house.foundation,
+        stories: data.stories || house.stories,
+        materials: data.materials || house.materials,
+        roof: data.roof || house.roof,
+        hoaFee: data.hoaFee || house.hoaFee,
+        heating: data.heating || house.heating,
+        cooling: data.cooling || house.cooling,
+        zpid: data.zpid || house.zpid,
+        zillowLastChecked: new Date(),
+      })
+      await addHistory({
+        houseId: id,
+        address: house.address,
+        event: 'status_changed',
+        fromStatus: house.status,
+        toStatus: house.status,
+        note: 'Refreshed data from Zillow',
+      })
+      setRefreshMsg({ type: 'success', text: 'Data refreshed from Zillow successfully.' })
+    } catch (err) {
+      setRefreshMsg({ type: 'error', text: `Refresh failed: ${err.message}` })
+    } finally {
+      setRefreshing(false)
+      setTimeout(() => setRefreshMsg(null), 5000)
+    }
   }
 
   const needsDeleteConfirm = house.status !== STATUS.NEW
@@ -170,6 +244,30 @@ export default function HouseDetailPage() {
                     <div key={n} className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${n <= house.tourOverallRating ? 'bg-amber-500 text-stone-950' : 'bg-stone-800 text-stone-600'}`}>{n}</div>
                   ))}
                 </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Refresh from Zillow */}
+        {(house.zillowUrl || house.zpid) && (
+          <div className="space-y-2">
+            <button
+              onClick={handleRefreshFromZillow}
+              disabled={refreshing}
+              className="flex items-center gap-2 text-stone-400 text-sm hover:text-amber-400 transition-colors disabled:opacity-40"
+            >
+              <RefreshCw size={14} className={refreshing ? 'animate-spin' : ''} />
+              {refreshing ? 'Refreshing from Zillow...' : 'Refresh data from Zillow'}
+            </button>
+            {refreshMsg && (
+              <div className={`p-3 rounded-xl text-xs border ${
+                refreshMsg.type === 'success' ? 'bg-green-950/50 text-green-400 border-green-900' :
+                refreshMsg.type === 'sold' ? 'bg-red-950/50 text-red-400 border-red-900' :
+                refreshMsg.type === 'warning' ? 'bg-amber-950/50 text-amber-400 border-amber-900' :
+                'bg-red-950/50 text-red-400 border-red-900'
+              }`}>
+                {refreshMsg.text}
               </div>
             )}
           </div>
