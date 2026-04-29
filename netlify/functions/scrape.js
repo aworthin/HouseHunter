@@ -12,7 +12,17 @@ export const handler = async (event) => {
   }
 
   console.log('=== SCRAPE START ===')
-  console.log('URL:', url)
+  console.log('Raw URL:', url)
+
+  // Strip UTM tracking params added by iOS share sheet / Zillow app
+  try {
+    const parsed = new URL(url)
+    url = `https://www.zillow.com${parsed.pathname}`
+    if (!url.endsWith('/')) url += '/'
+  } catch (e) {
+    console.log('URL parse failed, using as-is:', e.message)
+  }
+  console.log('Cleaned URL:', url)
 
   const addressFromUrl = extractAddressFromUrl(url)
   console.log('Address from URL:', addressFromUrl)
