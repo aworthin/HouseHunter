@@ -3,7 +3,32 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { ArrowLeft, Link2, Loader2, AlertCircle, CheckCircle } from '../icons'
 import { addHouse } from '../lib/db'
 
-const SCRAPER_URL = import.meta.env.VITE_SCRAPER_URL || '/api/scrape'
+// Firebase function (Google Cloud IP - less likely to be blocked)
+// Falls back to Netlify function if Firebase isn't available
+const FIREBASE_SCRAPER = 'https://us-central1-bw-house-hunter.cloudfunctions.net/scrape'
+const NETLIFY_SCRAPER = '/api/scrape'
+
+async function fetchScrape(url) {
+  // Try Firebase first
+  try {
+    const res = await fetch(FIREBASE_SCRAPER, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url }),
+      signal: AbortSignal.timeout(20000)
+    })
+    if (res.ok) return res.json()
+  } catch (e) {
+    console.log('Firebase scraper unavailable, trying Netlify:', e.message)
+  }
+  // Fall back to Netlify
+  const res = await fetch(NETLIFY_SCRAPER, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ url })
+  })
+  return res.json()
+}
 
 const EMPTY_FORM = {
   zillowUrl: '',
@@ -47,12 +72,7 @@ export default function AddHousePage() {
     setScraping(true)
     setScrapeStatus(null)
     try {
-      const res = await fetch(SCRAPER_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url })
-      })
-      const data = await res.json()
+      const data = await fetchScrape(url)
 
       if (data._partial) {
         if (data.address) setForm(f => ({ ...f, zillowUrl: url, address: data.address }))
