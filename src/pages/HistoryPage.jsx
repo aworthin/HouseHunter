@@ -67,7 +67,13 @@ export default function HistoryPage() {
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
   // Capture the last seen ULID at mount time BEFORE we update it
-  const [seenUlidAtMount] = useState(() => getLastSeenUlid())
+  const [seenUlidAtMount] = useState(() => {
+    const stored = getLastSeenUlid()
+    // If never visited before, we'll compare against items loaded after mount
+    return stored
+  })
+  // Track when this page session started (for first-time visitors)
+  const [sessionStart] = useState(() => Date.now())
 
   useEffect(() => {
     const unsub = subscribeToHistory((data) => {
@@ -141,7 +147,12 @@ export default function HistoryPage() {
               const { item, date } = entry
               const cfg = EVENT_CONFIG[item.event] || EVENT_CONFIG.added
               const Icon = cfg.icon
-              const isNew = seenUlidAtMount && item.id > seenUlidAtMount
+              // New if: has a stored ULID and this item is newer than last visit
+              // OR first time visitor and item was added in the last 5 minutes (likely during this session)
+              const itemDate = item.id ? ulidToDate(item.id) : null
+              const isNew = seenUlidAtMount
+                ? item.id > seenUlidAtMount
+                : itemDate && (sessionStart - itemDate.getTime() < 5 * 60 * 1000)
 
               return (
                 <div
