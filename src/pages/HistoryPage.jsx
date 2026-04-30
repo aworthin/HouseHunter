@@ -66,24 +66,20 @@ export default function HistoryPage() {
   const { latestHistoryId } = useHouses()
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
-  const lastSeenUlid = getLastSeenUlid()
+  // Capture the last seen ULID at mount time BEFORE we update it
+  const [seenUlidAtMount] = useState(() => getLastSeenUlid())
 
   useEffect(() => {
     const unsub = subscribeToHistory((data) => {
       setItems(data)
       setLoading(false)
+      // Mark all as seen after we've loaded and displayed
+      if (data.length > 0) {
+        setLastSeenUlid(data[0].id)
+      }
     })
-    // Mark all as seen
-    if (latestHistoryId) setLastSeenUlid(latestHistoryId)
     return unsub
   }, [])
-
-  // Update last seen when we get items
-  useEffect(() => {
-    if (items.length > 0) {
-      setLastSeenUlid(items[0].id)
-    }
-  }, [items])
 
   // Group by day
   const grouped = []
@@ -121,7 +117,7 @@ export default function HistoryPage() {
         ) : (
           <div className="px-4 pt-4 space-y-1">
             {(() => {
-              const newCount = items.filter(item => lastSeenUlid && item.id > lastSeenUlid).length
+              const newCount = items.filter(item => seenUlidAtMount && item.id > seenUlidAtMount).length
               return newCount > 0 ? (
                 <div className="card p-3 mb-3 border-amber-700/50 bg-amber-950/20 flex items-center gap-2">
                   <span className="bg-amber-500 text-stone-950 text-xs font-bold px-1.5 py-0.5 rounded-full shrink-0">{newCount}</span>
@@ -140,7 +136,7 @@ export default function HistoryPage() {
               const { item, date } = entry
               const cfg = EVENT_CONFIG[item.event] || EVENT_CONFIG.added
               const Icon = cfg.icon
-              const isNew = lastSeenUlid && item.id > lastSeenUlid
+              const isNew = seenUlidAtMount && item.id > seenUlidAtMount
 
               return (
                 <div
