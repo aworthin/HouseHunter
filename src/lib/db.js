@@ -158,3 +158,46 @@ export function subscribeToLatestHistoryId(callback) {
     callback(snap.empty ? null : snap.docs[0].data().id)
   })
 }
+
+// ─── Tour ─────────────────────────────────────────────────────────────
+
+export async function startTour(house) {
+  const updates = {
+    tourStartedAt: serverTimestamp(),
+    tourData: house.tourData || {},
+    updatedAt: serverTimestamp(),
+  }
+  await updateDoc(doc(db, HOUSES_COL, house.id), updates)
+  await addHistory({
+    houseId: house.id,
+    address: house.address,
+    event: 'toured',
+    fromStatus: house.status,
+    toStatus: house.status,
+    note: 'Tour started',
+  })
+}
+
+export async function saveRoomAnswers(houseId, roomId, answers) {
+  await updateDoc(doc(db, HOUSES_COL, houseId), {
+    [`tourData.${roomId}`]: { answers, savedAt: new Date().toISOString() },
+    updatedAt: serverTimestamp(),
+  })
+}
+
+export async function completeTour(house) {
+  await updateDoc(doc(db, HOUSES_COL, house.id), {
+    tourCompletedAt: serverTimestamp(),
+    status: STATUS.TOURED,
+    rank: house.rank || null,
+    updatedAt: serverTimestamp(),
+  })
+  await addHistory({
+    houseId: house.id,
+    address: house.address,
+    event: 'status_changed',
+    fromStatus: STATUS.REVIEWED,
+    toStatus: STATUS.TOURED,
+    note: 'Tour completed',
+  })
+}

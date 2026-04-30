@@ -1,8 +1,9 @@
-import React, { useState } from 'react'
+import React, { useState, useRef } from 'react'
 import { X, ChevronLeft, ChevronRight, Image } from '../icons'
 
 export default function ImageGallery({ images, floorPlanUrl }) {
   const [lightbox, setLightbox] = useState(null)
+  const touchStartX = useRef(null)
   const allImages = [...(images || []), ...(floorPlanUrl ? [floorPlanUrl] : [])]
 
   if (!allImages.length) {
@@ -74,6 +75,16 @@ export default function ImageGallery({ images, floorPlanUrl }) {
             alt="Full size"
             className="max-w-full max-h-full object-contain"
             onClick={e => e.stopPropagation()}
+            onTouchStart={e => { touchStartX.current = e.touches[0].clientX }}
+            onTouchEnd={e => {
+              if (touchStartX.current === null) return
+              const diff = touchStartX.current - e.changedTouches[0].clientX
+              if (Math.abs(diff) > 40) {
+                if (diff > 0) next()
+                else prev()
+              }
+              touchStartX.current = null
+            }}
             style={{ maxHeight: '90dvh', maxWidth: '95vw' }}
           />
 

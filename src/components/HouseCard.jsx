@@ -80,9 +80,19 @@ export default function HouseCard({ house, rank, dragHandleProps, isDragging }) 
               {house.baths && <span className="flex items-center gap-1"><Bath size={11} /> {house.baths}ba</span>}
               {house.sqft && <span className="flex items-center gap-1"><Square size={11} /> {house.sqft}</span>}
             </div>
-            {house.tourNotes && (
-              <p className="text-stone-500 text-xs mt-1 line-clamp-1 italic">"{house.tourNotes}"</p>
-            )}
+            {house.tourStartedAt && house.status !== 'toured' && (() => {
+              const saved = Object.keys(house.tourData || {}).length
+              return (
+                <div className="mt-1.5">
+                  <div className="flex items-center justify-between mb-0.5">
+                    <p className="text-amber-500 text-xs">Tour in progress · {saved}/{16}</p>
+                  </div>
+                  <div className="h-1 bg-stone-700 rounded-full overflow-hidden">
+                    <div className="h-full bg-amber-500 rounded-full" style={{ width: `${(saved/16)*100}%` }} />
+                  </div>
+                </div>
+              )
+            })()}
           </div>
         </div>
       </div>

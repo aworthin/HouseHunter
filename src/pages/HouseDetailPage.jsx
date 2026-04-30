@@ -309,7 +309,8 @@ export default function HouseDetailPage() {
               <button onClick={() => navigate(`/house/${id}/tour`)}
                 className="btn-primary flex-1 flex items-center justify-center gap-1.5 py-3">
                 <ClipboardList size={15} />
-                {house.status === STATUS.TOURED ? 'Update Tour' : 'Tour Mode'}
+                {house.status === STATUS.TOURED ? 'Review Tour' :
+                 house.tourStartedAt ? 'Continue Tour' : 'Start Tour'}
               </button>
             )}
 
