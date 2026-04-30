@@ -126,13 +126,7 @@ export default function HistoryPage() {
           </div>
         ) : (
           <>
-          {/* DEBUG - remove after fixing */}
-          <div className="px-4 pt-3 mb-2 p-3 bg-stone-800 rounded-xl text-xs text-stone-400 font-mono space-y-1">
-            <p>seenUlidAtMount: {seenUlidAtMount || 'null'}</p>
-            <p>items[0].id: {items[0]?.id || 'none'}</p>
-            <p>isNew[0]: {String(seenUlidAtMount ? items[0]?.id > seenUlidAtMount : false)}</p>
-            <p>newCount: {items.filter(item => seenUlidAtMount ? item.id > seenUlidAtMount : false).length}</p>
-          </div>
+
           {(() => {
               const newCount = items.filter(item => seenUlidAtMount && item.id > seenUlidAtMount).length
               if (!newCount) return null
