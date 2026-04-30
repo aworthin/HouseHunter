@@ -120,6 +120,15 @@ export default function HistoryPage() {
           </div>
         ) : (
           <div className="px-4 pt-4 space-y-1">
+            {(() => {
+              const newCount = items.filter(item => lastSeenUlid && item.id > lastSeenUlid).length
+              return newCount > 0 ? (
+                <div className="card p-3 mb-3 border-amber-700/50 bg-amber-950/20 flex items-center gap-2">
+                  <span className="bg-amber-500 text-stone-950 text-xs font-bold px-1.5 py-0.5 rounded-full shrink-0">{newCount}</span>
+                  <p className="text-amber-400 text-sm">new {newCount === 1 ? 'item' : 'items'} since your last visit</p>
+                </div>
+              ) : null
+            })()}
             {grouped.map((entry, i) => {
               if (entry.type === 'day') {
                 return (
@@ -136,7 +145,11 @@ export default function HistoryPage() {
               return (
                 <div
                   key={item.id}
-                  className={`card p-3 border flex items-start gap-3 animate-fade-in ${cfg.bg} ${isNew ? 'ring-1 ring-amber-500/30' : ''}`}
+                  className={`p-3 flex items-start gap-3 animate-fade-in rounded-2xl border ${
+                isNew
+                  ? 'bg-amber-950/20 border-amber-700/50 border-l-4 border-l-amber-500'
+                  : `${cfg.bg}`
+              }`}
                   onClick={() => item.houseId && navigate(`/house/${item.houseId}`)}
                   style={{ cursor: item.houseId ? 'pointer' : 'default' }}
                 >
@@ -158,7 +171,7 @@ export default function HistoryPage() {
                       <p className="text-stone-600 text-xs">{item.userName}</p>
                       <span className="text-stone-700">·</span>
                       <p className="text-stone-600 text-xs">{timeAgo(date)}</p>
-                      {isNew && <span className="text-amber-500 text-xs font-medium">NEW</span>}
+                      {isNew && <span className="bg-amber-500 text-stone-950 text-xs font-bold px-1.5 py-0.5 rounded-full">NEW</span>}
                     </div>
                   </div>
                 </div>
