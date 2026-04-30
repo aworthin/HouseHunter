@@ -152,8 +152,13 @@ export default function HistoryPage() {
                   onClick={() => item.houseId && navigate(`/house/${item.houseId}`)}
                   style={{ cursor: item.houseId ? 'pointer' : 'default' }}
                 >
-                  <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 bg-stone-900`}>
-                    <Icon size={15} className={cfg.color} />
+                  <div className="relative shrink-0">
+                    <div className="w-8 h-8 rounded-xl flex items-center justify-center bg-stone-900">
+                      <Icon size={15} className={cfg.color} />
+                    </div>
+                    {isNew && (
+                      <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-amber-500 rounded-full border-2 border-stone-950" />
+                    )}
                   </div>
                   <div className="flex-1 min-w-0">
                     {item.address && (
