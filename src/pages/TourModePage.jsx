@@ -277,19 +277,6 @@ export default function TourModePage() {
       {/* Bottom nav */}
       <div className="fixed bottom-0 left-0 right-0 bg-stone-950/95 backdrop-blur-md border-t border-stone-800 px-4 pt-3 safe-bottom">
         <div className="max-w-lg mx-auto space-y-2">
-          {/* Save current room */}
-          <button
-            onClick={handleSaveRoom}
-            disabled={saving}
-            className={`w-full py-2.5 rounded-xl text-sm font-medium transition-all active:scale-95 ${
-              savedRooms[room.id]
-                ? 'bg-green-900/40 text-green-400 border border-green-800'
-                : 'bg-stone-800 text-stone-300 border border-stone-700'
-            }`}
-          >
-            {saving ? 'Saving...' : savedRooms[room.id] ? '✓ Saved — tap to re-save' : 'Save this room'}
-          </button>
-
           {/* Prev / Next or Complete */}
           <div className="flex gap-2">
             <button
