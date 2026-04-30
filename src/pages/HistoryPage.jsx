@@ -157,9 +157,7 @@ export default function HistoryPage() {
               return (
                 <div
                   key={item.id}
-                  className={`p-3 flex items-start gap-3 animate-fade-in rounded-2xl border ${cfg.bg} ${
-                isNew ? 'border-l-4 border-l-amber-500' : ''
-              }`}
+                  className={`p-3 flex items-start gap-3 animate-fade-in rounded-2xl border ${cfg.bg}`}
                   onClick={() => item.houseId && navigate(`/house/${item.houseId}`)}
                   style={{ cursor: item.houseId ? 'pointer' : 'default' }}
                 >
@@ -187,7 +185,7 @@ export default function HistoryPage() {
                       <p className="text-stone-600 text-xs">{item.userName}</p>
                       <span className="text-stone-700">·</span>
                       <p className="text-stone-600 text-xs">{timeAgo(date)}</p>
-                      {isNew && <span className="bg-amber-500 text-stone-950 text-xs font-bold px-1.5 py-0.5 rounded-full">NEW</span>}
+
                     </div>
                   </div>
                 </div>
