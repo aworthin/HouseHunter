@@ -63,7 +63,7 @@ function EventDescription({ item }) {
 
 export default function HistoryPage() {
   const navigate = useNavigate()
-  const { latestHistoryId } = useHouses()
+  const { latestHistoryId, setLastSeenUlidState } = useHouses()
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
   // Capture the last seen ULID at mount time BEFORE we update it
@@ -76,6 +76,7 @@ export default function HistoryPage() {
       // Mark all as seen after we've loaded and displayed
       if (data.length > 0) {
         setLastSeenUlid(data[0].id)
+        setLastSeenUlidState?.(data[0].id)
       }
     })
     return unsub
@@ -159,7 +160,8 @@ export default function HistoryPage() {
                     <p className="text-stone-400 text-xs mt-0.5">
                       <EventDescription item={item} />
                     </p>
-                    {item.note && item.event !== 'ranked' && (
+                    {item.note && item.event !== 'ranked' && item.event !== 'refreshed' &&
+                      !(item.event === 'toured' && item.note === 'Tour started') && (
                       <p className="text-stone-600 text-xs mt-0.5 italic">{item.note}</p>
                     )}
                     <div className="flex items-center gap-2 mt-1">

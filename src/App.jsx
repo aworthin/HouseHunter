@@ -85,6 +85,7 @@ export default function App() {
   const [checkStatus, setCheckStatus] = useState(null) // 'checking' | 'done' | null
   const [newlySold, setNewlySold] = useState([]) // houses just detected as sold
   const [dismissedSold, setDismissedSold] = useState([])
+  const [lastSeenUlidState, setLastSeenUlidState] = useState(getLastSeenUlid)
 
   // Subscribe to houses
   useEffect(() => {
@@ -193,9 +194,8 @@ export default function App() {
   const sold = byStatus(STATUS.SOLD)
 
   // Unread history badge
-  const lastSeenUlid = getLastSeenUlid()
-  const hasUnreadHistory = latestHistoryId && latestHistoryId !== lastSeenUlid &&
-    (!lastSeenUlid || latestHistoryId > lastSeenUlid)
+  const hasUnreadHistory = latestHistoryId && latestHistoryId !== lastSeenUlidState &&
+    (!lastSeenUlidState || latestHistoryId > lastSeenUlidState)
 
   if (!userName) return <NameModal onSave={handleSaveName} />
 
@@ -203,6 +203,7 @@ export default function App() {
     <HouseContext.Provider value={{
       houses, loading, ranked, reviewed, newHouses, rejected, sold,
       checkStatus, hasUnreadHistory, latestHistoryId, userName,
+      setLastSeenUlidState,
       // legacy compat
       toured: ranked, pending: [...reviewed, ...newHouses]
     }}>
