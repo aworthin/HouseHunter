@@ -68,26 +68,25 @@ export default function HistoryPage() {
   const [loading, setLoading] = useState(true)
   // Capture the last seen ULID at mount time BEFORE updating it
   const [seenUlidAtMount] = useState(() => getLastSeenUlid())
+  const latestItemIdRef = React.useRef(null)
 
   useEffect(() => {
     const unsub = subscribeToHistory((data) => {
       setItems(data)
       setLoading(false)
+      if (data.length > 0) latestItemIdRef.current = data[0].id
     })
-    // Mark as seen when LEAVING the page (cleanup), not on arrival
+    // Save last seen ONLY when leaving the page
     return () => {
       unsub()
-      const latest = getLastSeenUlid() // read current latest from history subscription
+      if (latestItemIdRef.current) {
+        setLastSeenUlid(latestItemIdRef.current)
+        setLastSeenUlidState?.(latestItemIdRef.current)
+      }
     }
   }, [])
 
-  // Update last seen when items load - but only store, don't use for isNew calculation
-  useEffect(() => {
-    if (items.length > 0) {
-      setLastSeenUlid(items[0].id)
-      setLastSeenUlidState?.(items[0].id)
-    }
-  }, [items.length])
+
 
   // Group by day
   const grouped = []
