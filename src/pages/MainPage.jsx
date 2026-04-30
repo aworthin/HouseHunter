@@ -107,7 +107,6 @@ export default function MainPage() {
   const activeHouse = activeId ? (localRanked || ranked).find(h => h.id === activeId) : null
 
   function handleHistoryClick() {
-    if (latestHistoryId) setLastSeenUlid(latestHistoryId)
     navigate('/history')
   }
 

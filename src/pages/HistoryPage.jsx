@@ -70,18 +70,21 @@ export default function HistoryPage() {
   const [seenUlidAtMount] = useState(() => getLastSeenUlid())
   const latestItemIdRef = React.useRef(null)
 
+
   useEffect(() => {
     const unsub = subscribeToHistory((data) => {
       setItems(data)
       setLoading(false)
-      if (data.length > 0) latestItemIdRef.current = data[0].id
+
     })
     // Save last seen ONLY when leaving the page
     return () => {
       unsub()
-      if (latestItemIdRef.current) {
-        setLastSeenUlid(latestItemIdRef.current)
-        setLastSeenUlidState?.(latestItemIdRef.current)
+      // Save when leaving - this is the correct time to mark as "seen"
+      const latest = latestItemIdRef.current
+      if (latest) {
+        setLastSeenUlid(latest)
+        setLastSeenUlidState?.(latest)
       }
     }
   }, [])
