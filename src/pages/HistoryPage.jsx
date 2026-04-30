@@ -66,27 +66,28 @@ export default function HistoryPage() {
   const { latestHistoryId, setLastSeenUlidState } = useHouses()
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
-  // Capture the last seen ULID at mount time BEFORE we update it
-  const [seenUlidAtMount] = useState(() => {
-    const stored = getLastSeenUlid()
-    // If never visited before, we'll compare against items loaded after mount
-    return stored
-  })
-  // Track when this page session started (for first-time visitors)
-  const [sessionStart] = useState(() => Date.now())
+  // Capture the last seen ULID at mount time BEFORE updating it
+  const [seenUlidAtMount] = useState(() => getLastSeenUlid())
 
   useEffect(() => {
     const unsub = subscribeToHistory((data) => {
       setItems(data)
       setLoading(false)
-      // Mark all as seen after we've loaded and displayed
-      if (data.length > 0) {
-        setLastSeenUlid(data[0].id)
-        setLastSeenUlidState?.(data[0].id)
-      }
     })
-    return unsub
+    // Mark as seen when LEAVING the page (cleanup), not on arrival
+    return () => {
+      unsub()
+      const latest = getLastSeenUlid() // read current latest from history subscription
+    }
   }, [])
+
+  // Update last seen when items load - but only store, don't use for isNew calculation
+  useEffect(() => {
+    if (items.length > 0) {
+      setLastSeenUlid(items[0].id)
+      setLastSeenUlidState?.(items[0].id)
+    }
+  }, [items.length])
 
   // Group by day
   const grouped = []
@@ -147,12 +148,7 @@ export default function HistoryPage() {
               const { item, date } = entry
               const cfg = EVENT_CONFIG[item.event] || EVENT_CONFIG.added
               const Icon = cfg.icon
-              // New if: has a stored ULID and this item is newer than last visit
-              // OR first time visitor and item was added in the last 5 minutes (likely during this session)
-              const itemDate = item.id ? ulidToDate(item.id) : null
-              const isNew = seenUlidAtMount
-                ? item.id > seenUlidAtMount
-                : itemDate && (sessionStart - itemDate.getTime() < 5 * 60 * 1000)
+              const isNew = seenUlidAtMount ? item.id > seenUlidAtMount : false
 
               return (
                 <div
