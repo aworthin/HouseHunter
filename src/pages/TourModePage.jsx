@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { ArrowLeft, ChevronLeft, ChevronRight, CheckCircle, ClipboardList } from '../icons'
 import { useHouses } from '../App'
-import { startTour, saveRoomAnswers, completeTour, STATUS } from '../lib/db'
+import { startTour, saveRoomAnswers, completeTour, changeStatus, STATUS } from '../lib/db'
 import { TOUR_ROOMS, ROOM_COUNT } from '../lib/tourRooms'
 
 // ─── Question renderers ────────────────────────────────────────────

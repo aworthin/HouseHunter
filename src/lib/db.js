@@ -14,6 +14,7 @@ const HISTORY_COL = 'history'
 export const STATUS = {
   NEW: 'new',
   REVIEWED: 'reviewed',
+  READY_TO_TOUR: 'ready_to_tour',
   TOURED: 'toured',
   REJECTED: 'rejected',
   SOLD: 'sold',
@@ -22,6 +23,7 @@ export const STATUS = {
 export const STATUS_LABELS = {
   new: 'New',
   reviewed: 'Reviewed',
+  ready_to_tour: 'Ready to Tour',
   toured: 'Toured',
   rejected: 'Rejected',
   sold: 'Sold',

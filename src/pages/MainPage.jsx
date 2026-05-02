@@ -77,7 +77,7 @@ function SectionHeader({ icon: Icon, label, count, color = 'text-stone-400', def
 
 export default function MainPage() {
   const navigate = useNavigate()
-  const { ranked, reviewed, newHouses, rejected, sold, loading, checkStatus, hasUnreadHistory, latestHistoryId } = useHouses()
+  const { ranked, readyToTour, reviewed, newHouses, rejected, sold, loading, checkStatus, hasUnreadHistory, latestHistoryId } = useHouses()
   const [activeId, setActiveId] = useState(null)
   const [localRanked, setLocalRanked] = useState(null)
 
@@ -134,7 +134,7 @@ export default function MainPage() {
             )}
             {!checkStatus && (
               <p className="text-stone-500 text-xs mt-0.5">
-                {ranked.length} ranked · {reviewed.length} to tour · {newHouses.length} new
+                {ranked.length} ranked · {readyToTour.length} to tour · {reviewed.length} reviewed · {newHouses.length} new
               </p>
             )}
           </div>
@@ -200,12 +200,27 @@ export default function MainPage() {
           )}
         </SectionHeader>
 
-        {/* To Be Toured (Reviewed) */}
-        <SectionHeader icon={Clock} label="To Be Toured" count={reviewed.length} color="text-blue-400" houses={reviewed}>
-          {reviewed.length === 0 ? (
+        {/* To Be Toured (Ready to Tour) */}
+        <SectionHeader icon={Clock} label="To Be Toured" count={readyToTour.length} color="text-blue-400" houses={readyToTour}>
+          {readyToTour.length === 0 ? (
             <div className="card p-6 text-center">
               <Clock size={28} className="text-stone-700 mx-auto mb-2" />
-              <p className="text-stone-500 text-sm">No houses scheduled for tours yet.</p>
+              <p className="text-stone-500 text-sm">No houses ready to tour yet.</p>
+              <p className="text-stone-600 text-xs mt-1">Mark a Reviewed house as Ready to Tour.</p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {readyToTour.map(house => <HouseCard key={house.id} house={house} />)}
+            </div>
+          )}
+        </SectionHeader>
+
+        {/* Reviewed */}
+        <SectionHeader icon={Eye} label="Reviewed" count={reviewed.length} color="text-stone-400" houses={reviewed}>
+          {reviewed.length === 0 ? (
+            <div className="card p-6 text-center">
+              <Eye size={28} className="text-stone-700 mx-auto mb-2" />
+              <p className="text-stone-500 text-sm">No reviewed houses yet.</p>
               <p className="text-stone-600 text-xs mt-1">Mark a house as Reviewed to add it here.</p>
             </div>
           ) : (

@@ -119,7 +119,7 @@ export default function App() {
   // Check stale houses for sold status
   const checkForSold = useCallback(async (houseList) => {
     console.time('[HQ] checkForSold total')
-    const active = [STATUS.NEW, STATUS.REVIEWED, STATUS.TOURED]
+    const active = [STATUS.NEW, STATUS.REVIEWED, STATUS.READY_TO_TOUR, STATUS.TOURED]
     const stale = houseList.filter(h => {
       if (!active.includes(h.status)) return false
       if (!h.zpid) return false
@@ -188,6 +188,7 @@ export default function App() {
   // Derived lists
   const byStatus = (s) => houses.filter(h => h.status === s)
   const ranked = byStatus(STATUS.TOURED).sort((a, b) => (a.rank ?? 999) - (b.rank ?? 999))
+  const readyToTour = byStatus(STATUS.READY_TO_TOUR)
   const reviewed = byStatus(STATUS.REVIEWED)
   const newHouses = byStatus(STATUS.NEW)
   const rejected = byStatus(STATUS.REJECTED)
@@ -201,7 +202,7 @@ export default function App() {
 
   return (
     <HouseContext.Provider value={{
-      houses, loading, ranked, reviewed, newHouses, rejected, sold,
+      houses, loading, ranked, readyToTour, reviewed, newHouses, rejected, sold,
       checkStatus, hasUnreadHistory, latestHistoryId, userName,
       setLastSeenUlidState,
       // legacy compat

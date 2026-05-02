@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import {
   ArrowLeft, Edit2, MapPin, Bed, Bath, Square, Calendar,
   ExternalLink, Trash2, ClipboardList, Trophy, Home,
-  Eye, ThumbsDown, Car, Layers, Tag, RefreshCw
+  Eye, ThumbsDown, Car, Layers, Tag, RefreshCw, Clock
 } from '../icons'
 import { useHouses } from '../App'
 import { deleteHouse, changeStatus, updateHouse, addHistory, STATUS, STATUS_LABELS } from '../lib/db'
@@ -29,6 +29,7 @@ function InfoRow({ icon: Icon, label, value }) {
 const STATUS_BADGE = {
   [STATUS.NEW]: 'bg-stone-700 text-stone-300',
   [STATUS.REVIEWED]: 'bg-blue-900/60 text-blue-300',
+  [STATUS.READY_TO_TOUR]: 'bg-cyan-900/60 text-cyan-300',
   [STATUS.TOURED]: 'bg-amber-500/20 text-amber-400',
   [STATUS.REJECTED]: 'bg-red-950/60 text-red-400',
   [STATUS.SOLD]: 'bg-red-900/40 text-red-300',
@@ -73,6 +74,12 @@ export default function HouseDetailPage() {
     await changeStatus(house, STATUS.REJECTED)
     setActing(false)
     setConfirmReject(false)
+  }
+
+  async function handleMarkReadyToTour() {
+    setActing(true)
+    await changeStatus(house, STATUS.READY_TO_TOUR)
+    setActing(false)
   }
 
   async function handleUnreject() {
@@ -305,7 +312,14 @@ export default function HouseDetailPage() {
               </button>
             )}
 
-            {(house.status === STATUS.REVIEWED || house.status === STATUS.TOURED) && (
+            {house.status === STATUS.REVIEWED && (
+              <button onClick={handleMarkReadyToTour} disabled={acting}
+                className="bg-cyan-900/60 text-cyan-300 border border-cyan-800 font-medium flex-1 flex items-center justify-center gap-1.5 py-3 rounded-xl active:scale-95 transition-all disabled:opacity-40">
+                <Clock size={15} /> Ready to Tour
+              </button>
+            )}
+
+            {(house.status === STATUS.READY_TO_TOUR || house.status === STATUS.TOURED) && (
               <button onClick={() => navigate(`/house/${id}/tour`)}
                 className="btn-primary flex-1 flex items-center justify-center gap-1.5 py-3">
                 <ClipboardList size={15} />

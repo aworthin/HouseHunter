@@ -7,6 +7,7 @@ import AddressActionSheet from './AddressActionSheet'
 const STATUS_BADGE = {
   [STATUS.NEW]: 'bg-stone-700 text-stone-300',
   [STATUS.REVIEWED]: 'bg-blue-900/60 text-blue-300',
+  [STATUS.READY_TO_TOUR]: 'bg-cyan-900/60 text-cyan-300',
   [STATUS.TOURED]: 'bg-amber-500/20 text-amber-400',
   [STATUS.REJECTED]: 'bg-red-950/60 text-red-400',
   [STATUS.SOLD]: 'bg-red-900/40 text-red-300',
