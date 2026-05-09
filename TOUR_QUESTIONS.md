@@ -90,7 +90,7 @@ Popup available: Abby's Furniture (all items from measurement sheet)
 | ID | Question | Type | Options |
 |----|----------|------|---------|
 | abbyFurnitureFits | Will Abby's furniture fit? (tap for measurements) | yesno | |
-| closetSize | How large is the closet? | text | |
+| closetSize | How large is the closet (120"W × 19"D)? | text | |
 | hasSecondCloset | Is there a second closet? | yesno | |
 | secondClosetSize | How large is the second closet? | text | |
 | notes | Notes | multiline | |

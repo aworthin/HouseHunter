@@ -133,7 +133,7 @@ export const TOUR_ROOMS = [
     emoji: '🛏️',
     questions: [
       { id: 'abbyFurnitureFits', label: "Will Abby's furniture fit?", type: 'yesno', furniturePopup: 'all' },
-      { id: 'closetSize', label: 'How large is the closet?', type: 'text', placeholder: 'e.g. 4ft wide walk-in' },
+      { id: 'closetSize', label: 'How large is the closet (120"W × 19"D)?', type: 'text', placeholder: 'e.g. 4ft wide walk-in' },
       { id: 'hasSecondCloset', label: 'Is there a second closet?', type: 'yesno' },
       { id: 'secondClosetSize', label: 'How large is the second closet?', type: 'text', placeholder: 'e.g. 3ft wide' },
       { id: 'notes', label: 'Notes', type: 'text', placeholder: 'Spare bedroom notes...', multiline: true },
