@@ -72,7 +72,7 @@ export const TOUR_ROOMS = [
     label: 'Living Room',
     emoji: '🛋️',
     questions: [
-      { id: 'wallForTV', label: 'Wall for TV to be mounted?', type: 'yesno' },
+      { id: 'wallForTV', label: 'Wall for TV to be mounted not above fireplace?', type: 'yesno' },
       { id: 'gusDoors', label: 'How many doors will have to be blocked for Gus?', type: 'number', placeholder: '0' },
       { id: 'notes', label: 'Notes', type: 'text', placeholder: 'Living room notes...', multiline: true },
     ],
@@ -157,7 +157,7 @@ export const TOUR_ROOMS = [
     label: 'Office',
     emoji: '💼',
     questions: [
-      { id: 'deskFits', label: "Will Ben's desk fit (27\"W × 48\"L × 29\"H)?", type: 'yesno' },
+      { id: 'deskFits', label: "Will Abby's desk fit?", type: 'yesno' },
       { id: 'hasEthernet', label: 'Are there ethernet ports?', type: 'yesno' },
       { id: 'notes', label: 'Notes', type: 'text', placeholder: 'Office notes...', multiline: true },
     ],
@@ -185,6 +185,7 @@ export const TOUR_ROOMS = [
       { id: 'mowDifficulty', label: 'How hard to mow?', type: 'choice', options: ['Easy', 'Medium', 'Hard'] },
       { id: 'needsRidingMower', label: 'Need riding mower?', type: 'yesno' },
       { id: 'fenceDims', label: 'Fence dimensions?', type: 'text', placeholder: 'e.g. 6ft privacy, 3 sides' },
+      { id: 'hammockSpace', label: 'Place to hang a hammock?', type: 'yesno' },
       { id: 'notes', label: 'Notes', type: 'text', placeholder: 'Back yard notes...', multiline: true },
     ],
   },

@@ -45,7 +45,7 @@ Update this file when adding new questions, then provide it to Claude to update 
 ## Living Room
 | ID | Question | Type | Options |
 |----|----------|------|---------|
-| wallForTV | Wall for TV to be mounted? | yesno | |
+| wallForTV | Wall for TV to be mounted not above fireplace? | yesno | |
 | gusDoors | How many doors will have to be blocked for Gus? | number | |
 | notes | Notes | multiline | |
 
@@ -110,7 +110,7 @@ Popup available: Abby's Bathroom Furniture (Mirror, Bathroom Storage)
 ## Office
 | ID | Question | Type | Options |
 |----|----------|------|---------|
-| deskFits | Will Ben's desk fit (27"W × 48"L × 29"H)? | yesno | |
+| deskFits | Will Abby's desk fit? | yesno | |
 | hasEthernet | Are there ethernet ports? | yesno | |
 | notes | Notes | multiline | |
 
@@ -132,6 +132,7 @@ Popup available: Abby's Bathroom Furniture (Mirror, Bathroom Storage)
 | mowDifficulty | How hard to mow? | choice | Easy, Medium, Hard |
 | needsRidingMower | Need riding mower? | yesno | |
 | fenceDims | Fence dimensions? | text | |
+| hammockSpace | Place to hang a hammock? | yesno | |
 | notes | Notes | multiline | |
 
 ## Storage
