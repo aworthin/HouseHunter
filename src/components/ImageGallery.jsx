@@ -1,8 +1,77 @@
 import React, { useState, useRef } from 'react'
 import { X, ChevronLeft, ChevronRight, Image } from '../icons'
 
+function isLikelyPdf(url) {
+  if (!url) return false
+  return url.toLowerCase().includes('.pdf') ||
+    url.toLowerCase().includes('application/pdf') ||
+    url.toLowerCase().includes('drive.google.com') ||
+    url.toLowerCase().includes('dropbox.com')
+}
+
+function FloorPlanViewer({ url, onClose }) {
+  const isPdf = isLikelyPdf(url)
+  const viewerUrl = isPdf
+    ? `https://docs.google.com/viewer?url=${encodeURIComponent(url)}&embedded=true`
+    : url
+  const [loadError, setLoadError] = useState(false)
+
+  return (
+    <div className="fixed inset-0 z-50 bg-stone-950/98 flex flex-col animate-fade-in">
+      <div className="flex items-center gap-3 px-4 py-3 border-b border-stone-800"
+           style={{ paddingTop: 'max(0.75rem, env(safe-area-inset-top))' }}>
+        <button onClick={onClose} className="text-stone-400 active:text-stone-200">
+          <X size={22} />
+        </button>
+        <p className="text-stone-300 font-medium text-sm flex-1">Floor Plan</p>
+        <a
+          href={url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="bg-stone-800 text-stone-300 text-xs px-3 py-1.5 rounded-lg border border-stone-700 active:scale-95 transition-transform"
+          onClick={onClose}
+        >
+          Open in Browser
+        </a>
+      </div>
+      <div className="flex-1 relative">
+        {!loadError ? (
+          isPdf ? (
+            <iframe
+              src={viewerUrl}
+              className="w-full h-full border-0"
+              onError={() => setLoadError(true)}
+              title="Floor Plan"
+            />
+          ) : (
+            <img
+              src={url}
+              alt="Floor Plan"
+              className="w-full h-full object-contain"
+              onError={() => setLoadError(true)}
+            />
+          )
+        ) : (
+          <div className="flex flex-col items-center justify-center h-full gap-4 px-6">
+            <p className="text-stone-400 text-center">Could not display floor plan inline.</p>
+            <a
+              href={url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn-primary px-6 py-3"
+            >
+              Open Floor Plan in Browser
+            </a>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
 export default function ImageGallery({ images, floorPlanUrl }) {
   const [lightbox, setLightbox] = useState(null)
+  const [showFloorPlan, setShowFloorPlan] = useState(false)
   const touchStartX = useRef(null)
   const allImages = [...(images || []), ...(floorPlanUrl ? [floorPlanUrl] : [])]
 
@@ -17,7 +86,12 @@ export default function ImageGallery({ images, floorPlanUrl }) {
     )
   }
 
-  const prev = () => setLightbox(l => (l - 1 + allImages.length) % allImages.length)
+  function prevImg() {
+    const prevIdx = (lightbox - 1 + allImages.length) % allImages.length
+    if (isFloorPlanIndex(prevIdx)) { setLightbox(null); setShowFloorPlan(true) }
+    else setLightbox(prevIdx)
+  }
+  const isFloorPlanIndex = (i) => i === allImages.length - 1 && floorPlanUrl && isLikelyPdf(floorPlanUrl)
   const next = () => setLightbox(l => (l + 1) % allImages.length)
 
   return (
@@ -28,7 +102,13 @@ export default function ImageGallery({ images, floorPlanUrl }) {
           <div
             key={i}
             className="gallery-item relative shrink-0 w-64 h-44 md:w-80 md:h-56 rounded-xl overflow-hidden bg-stone-800 cursor-pointer active:scale-95 transition-transform"
-            onClick={() => setLightbox(i)}
+            onClick={() => {
+              if (i === allImages.length - 1 && floorPlanUrl && isLikelyPdf(floorPlanUrl)) {
+                setShowFloorPlan(true)
+              } else {
+                setLightbox(i)
+              }
+            }}
           >
             <img
               src={url}
@@ -39,8 +119,8 @@ export default function ImageGallery({ images, floorPlanUrl }) {
               }}
             />
             {i === allImages.length - 1 && floorPlanUrl && (
-              <div className="absolute bottom-2 left-2 bg-stone-950/80 text-amber-400 text-xs px-2 py-1 rounded-lg backdrop-blur-sm">
-                Floor Plan
+              <div className="absolute bottom-2 left-2 bg-stone-950/80 text-amber-400 text-xs px-2 py-1 rounded-lg backdrop-blur-sm flex items-center gap-1">
+                {isLikelyPdf(floorPlanUrl) ? '📄' : '🗺️'} Floor Plan
               </div>
             )}
             <div className="absolute top-2 right-2 bg-stone-950/60 text-stone-300 text-xs px-1.5 py-0.5 rounded backdrop-blur-sm">
@@ -49,6 +129,11 @@ export default function ImageGallery({ images, floorPlanUrl }) {
           </div>
         ))}
       </div>
+
+      {/* Floor Plan Viewer */}
+      {showFloorPlan && floorPlanUrl && (
+        <FloorPlanViewer url={floorPlanUrl} onClose={() => setShowFloorPlan(false)} />
+      )}
 
       {/* Lightbox */}
       {lightbox !== null && (
@@ -65,7 +150,7 @@ export default function ImageGallery({ images, floorPlanUrl }) {
 
           <button
             className="absolute left-4 bg-stone-800/80 text-stone-300 p-3 rounded-full z-10"
-            onClick={e => { e.stopPropagation(); prev() }}
+            onClick={e => { e.stopPropagation(); prevImg() }}
           >
             <ChevronLeft size={24} />
           </button>
