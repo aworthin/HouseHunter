@@ -90,6 +90,26 @@ export default function HouseDetailPage() {
     setActing(false)
   }
 
+  async function handleResetTour() {
+    setActing(true)
+    await updateHouse(id, {
+      status: 'ready_to_tour',
+      tourData: {},
+      tourStartedAt: null,
+      tourCompletedAt: null,
+      rank: null,
+    })
+    await addHistory({
+      houseId: id,
+      address: house.address,
+      event: 'status_changed',
+      fromStatus: house.status,
+      toStatus: 'ready_to_tour',
+      note: 'Tour reset (testing)',
+    })
+    setActing(false)
+  }
+
   async function handleRefreshFromZillow() {
     if (!house.zillowUrl && !house.zpid) {
       setRefreshMsg({ type: 'error', text: 'No Zillow URL saved for this house.' })
@@ -327,6 +347,13 @@ export default function HouseDetailPage() {
                 <ClipboardList size={15} />
                 {house.status === STATUS.TOURED ? 'Review Tour' :
                  house.tourStartedAt ? 'Continue Tour' : 'Start Tour'}
+              </button>
+            )}
+            {(house.status === STATUS.TOURED || house.tourStartedAt) && (
+              <button onClick={handleResetTour} disabled={acting}
+                className="bg-stone-800 text-stone-500 border border-stone-700 px-3 py-3 rounded-xl active:scale-95 transition-all disabled:opacity-40 text-xs"
+                title="Reset tour (testing)">
+                ↺
               </button>
             )}
 
