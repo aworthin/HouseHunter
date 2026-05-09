@@ -27,7 +27,7 @@ export default function TabBar() {
             <button
               key={path}
               onClick={() => navigate(path)}
-              className={`flex-1 flex flex-col items-center gap-1 py-2.5 transition-all active:scale-95 ${
+              className={`flex-1 flex flex-col items-center gap-0.5 py-2 transition-all active:scale-95 ${
                 active ? 'text-amber-500' : 'text-stone-500'
               }`}
             >
