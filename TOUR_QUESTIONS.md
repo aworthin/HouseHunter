@@ -71,6 +71,10 @@ Update this file when adding new questions, then provide it to Claude to update 
 | lr4Location | If not, where? | text | |
 | roomForCatFood | Is there room for the cat food? | yesno | |
 | catFoodLocation | If not, where? | text | |
+| hasFoldingArea | Is there a folding area? | yesno | |
+| foldingAreaAdded | If not, can one be added? | yesno | |
+| hasHangingArea | Is there a hanging area? | yesno | |
+| hangingAreaAdded | If not, can one be added? | yesno | |
 | notes | Notes | multiline | |
 
 ## Master Bedroom
