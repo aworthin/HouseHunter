@@ -4,6 +4,9 @@ import { subscribeToHouses, subscribeToLatestHistoryId, STATUS, markZillowChecke
 import { getUserName, setUserName, getLastSeenUlid } from './lib/userPrefs'
 import { User } from './icons'
 import MainPage from './pages/MainPage'
+import ItemsPage from './pages/ItemsPage'
+import TabBar from './components/TabBar'
+import SidebarNav from './components/SidebarNav'
 import AddHousePage from './pages/AddHousePage'
 import HouseDetailPage from './pages/HouseDetailPage'
 import EditHousePage from './pages/EditHousePage'
@@ -209,7 +212,10 @@ export default function App() {
       toured: ranked, pending: [...reviewed, ...newHouses]
     }}>
       <SoldBanner houses={newlySold} onDismiss={dismissSold} />
-      <Routes>
+      <div className="flex h-dvh overflow-hidden">
+        <SidebarNav />
+        <div className="flex-1 overflow-y-auto" id="main-scroll">
+          <Routes>
         <Route path="/" element={<MainPage />} />
         <Route path="/add" element={<AddHousePage />} />
         <Route path="/house/:id" element={<HouseDetailPage />} />
@@ -218,7 +224,11 @@ export default function App() {
         <Route path="/ranking" element={<RankingPage />} />
         <Route path="/shortcut-setup" element={<ShortcutSetupPage />} />
         <Route path="/history" element={<HistoryPage />} />
-      </Routes>
+        <Route path="/items" element={<ItemsPage />} />
+          </Routes>
+        </div>
+      </div>
+      <TabBar />
     </HouseContext.Provider>
   )
 }

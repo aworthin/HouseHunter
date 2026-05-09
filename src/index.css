@@ -136,3 +136,15 @@
     overflow-y: auto;
   }
 }
+
+/* Tab bar bottom padding for pages */
+.tab-page {
+  padding-bottom: calc(4rem + env(safe-area-inset-bottom));
+}
+
+/* Full height layout */
+#root {
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}

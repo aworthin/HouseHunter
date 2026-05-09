@@ -203,3 +203,33 @@ export async function completeTour(house) {
     note: 'Tour completed',
   })
 }
+
+// ─── Items ────────────────────────────────────────────────────────────
+
+const ITEMS_COL = 'items'
+
+export function subscribeToItems(callback) {
+  const q = query(collection(db, ITEMS_COL), orderBy('addedAt', 'desc'))
+  return onSnapshot(q, (snap) => {
+    callback(snap.docs.map(d => ({ id: d.id, ...d.data() })))
+  })
+}
+
+export async function addItem(data) {
+  return addDoc(collection(db, ITEMS_COL), {
+    ...data,
+    addedAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  })
+}
+
+export async function updateItem(id, data) {
+  return updateDoc(doc(db, ITEMS_COL, id), {
+    ...data,
+    updatedAt: serverTimestamp(),
+  })
+}
+
+export async function deleteItem(id) {
+  return deleteDoc(doc(db, ITEMS_COL, id))
+}

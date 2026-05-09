@@ -6,7 +6,7 @@ import {
 } from '@dnd-kit/core'
 import { SortableContext, verticalListSortingStrategy, arrayMove } from '@dnd-kit/sortable'
 import {
-  Plus, Trophy, Clock, BarChart2, Smartphone, History,
+  Plus, Trophy, Clock, BarChart2, History,
   Eye, ThumbsDown, TrendingDown, RefreshCw, Home, Copy
 } from '../icons'
 import { useHouses } from '../App'
@@ -157,12 +157,7 @@ export default function MainPage() {
                 <BarChart2 size={18} />
               </button>
             )}
-            <button
-              onClick={() => navigate('/shortcut-setup')}
-              className="bg-stone-800 text-stone-300 p-2.5 rounded-xl border border-stone-700 active:scale-95 transition-transform"
-            >
-              <Smartphone size={18} />
-            </button>
+
             <button
               onClick={() => navigate('/add')}
               className="btn-primary flex items-center gap-2 py-2.5 px-4"
@@ -174,7 +169,7 @@ export default function MainPage() {
         </div>
       </div>
 
-      <div className="px-4 pb-8 space-y-8 pt-4">
+      <div className="px-4 pb-28 space-y-8 pt-4 md:pb-8">
         {/* Ranked / Toured */}
         <SectionHeader icon={Trophy} label="Ranked Houses" count={displayRanked.length} color="text-amber-500" houses={displayRanked}>
           {displayRanked.length === 0 ? (
