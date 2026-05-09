@@ -3,29 +3,86 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { ArrowLeft, ChevronLeft, ChevronRight, CheckCircle, ClipboardList } from '../icons'
 import { useHouses } from '../App'
 import { startTour, saveRoomAnswers, completeTour, changeStatus, STATUS } from '../lib/db'
-import { TOUR_ROOMS, ROOM_COUNT } from '../lib/tourRooms'
+import { TOUR_ROOMS, ROOM_COUNT, ABBYS_FURNITURE_ALL, ABBYS_FURNITURE_BATHROOM } from '../lib/tourRooms'
+
+
+// ─── Furniture Popup ───────────────────────────────────────────────
+function FurniturePopup({ type, onClose }) {
+  const items = type === 'bathroom' ? ABBYS_FURNITURE_BATHROOM : ABBYS_FURNITURE_ALL
+  const title = type === 'bathroom' ? "Abby's Bathroom Furniture" : "Abby's Furniture"
+  return (
+    <div className="fixed inset-0 z-[60] flex items-end justify-center bg-stone-950/90 animate-fade-in"
+         onClick={onClose}>
+      <div className="w-full max-w-lg bg-stone-900 rounded-t-2xl border-t border-stone-800 max-h-[80vh] flex flex-col animate-slide-up"
+           onClick={e => e.stopPropagation()}>
+        <div className="px-5 pt-4 pb-3 border-b border-stone-800 flex items-center justify-between shrink-0">
+          <h3 className="text-stone-100 font-semibold">{title}</h3>
+          <button onClick={onClose} className="text-stone-400 text-sm">Close</button>
+        </div>
+        <div className="overflow-y-auto p-4">
+          <table className="w-full text-xs">
+            <thead>
+              <tr className="text-stone-500 border-b border-stone-800">
+                <th className="text-left pb-2 font-medium">Item</th>
+                <th className="text-center pb-2 font-medium">W</th>
+                <th className="text-center pb-2 font-medium">L</th>
+                <th className="text-center pb-2 font-medium">H</th>
+                <th className="text-center pb-2 font-medium">D</th>
+              </tr>
+            </thead>
+            <tbody>
+              {items.map((row, i) => (
+                <tr key={i} className="border-b border-stone-800/50">
+                  <td className="py-2 text-stone-300 pr-2">{row.item}</td>
+                  <td className="py-2 text-center text-stone-400">{row.w}</td>
+                  <td className="py-2 text-center text-stone-400">{row.l}</td>
+                  <td className="py-2 text-center text-stone-400">{row.h}</td>
+                  <td className="py-2 text-center text-stone-400">{row.d}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  )
+}
 
 // ─── Question renderers ────────────────────────────────────────────
 function QuestionField({ question, value, onChange }) {
   if (question.type === 'yesno') {
+    const [showFurniture, setShowFurniture] = React.useState(false)
     return (
-      <div className="flex gap-3">
-        {['Yes', 'No'].map(opt => (
+      <>
+        {question.furniturePopup && (
           <button
-            key={opt}
-            onClick={() => onChange(opt)}
-            className={`flex-1 py-3 rounded-xl font-semibold text-sm transition-all active:scale-95 ${
-              value === opt
-                ? opt === 'Yes'
-                  ? 'bg-green-700 text-white border border-green-600'
-                  : 'bg-red-900 text-red-200 border border-red-800'
-                : 'bg-stone-800 text-stone-400 border border-stone-700'
-            }`}
+            onClick={() => setShowFurniture(true)}
+            className="text-amber-500 text-xs underline underline-offset-2 mb-2 block"
           >
-            {opt}
+            📐 View measurements
           </button>
-        ))}
-      </div>
+        )}
+        <div className="flex gap-3">
+          {['Yes', 'No'].map(opt => (
+            <button
+              key={opt}
+              onClick={() => onChange(opt)}
+              className={`flex-1 py-3 rounded-xl font-semibold text-sm transition-all active:scale-95 ${
+                value === opt
+                  ? opt === 'Yes'
+                    ? 'bg-green-700 text-white border border-green-600'
+                    : 'bg-red-900 text-red-200 border border-red-800'
+                  : 'bg-stone-800 text-stone-400 border border-stone-700'
+              }`}
+            >
+              {opt}
+            </button>
+          ))}
+        </div>
+        {showFurniture && question.furniturePopup && (
+          <FurniturePopup type={question.furniturePopup} onClose={() => setShowFurniture(false)} />
+        )}
+      </>
     )
   }
 
@@ -46,6 +103,20 @@ function QuestionField({ question, value, onChange }) {
           </button>
         ))}
       </div>
+    )
+  }
+
+  // number
+  if (question.type === 'number') {
+    return (
+      <input
+        className='input'
+        placeholder={question.placeholder || ''}
+        value={value || ''}
+        onChange={e => onChange(e.target.value)}
+        inputMode='decimal'
+        type='text'
+      />
     )
   }
 
