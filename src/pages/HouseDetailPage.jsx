@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import {
   ArrowLeft, Edit2, MapPin, Bed, Bath, Square, Calendar,
@@ -47,6 +47,8 @@ export default function HouseDetailPage() {
   const [showAddressSheet, setShowAddressSheet] = useState(false)
 
   const house = houses.find(h => h.id === id)
+
+  useEffect(() => { window.scrollTo(0, 0) }, [id])
 
   if (!house) return (
     <div className="min-h-dvh bg-stone-950 flex items-center justify-center">
