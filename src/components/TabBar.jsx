@@ -26,12 +26,12 @@ export default function TabBar() {
             <button
               key={path}
               onClick={() => navigate(path)}
-              className={`flex-1 flex flex-col items-center gap-0.5 py-1 transition-all active:scale-95 ${
+              className={`flex-1 flex flex-col items-center gap-0.5 pt-1.5 pb-1 transition-all active:scale-95 ${
                 active ? 'text-amber-500' : 'text-stone-500'
               }`}
             >
-              <Icon size={18} />
-              <span className="text-[10px] font-medium">{label}</span>
+              <Icon size={16} />
+              <span className="text-[9px] font-medium tracking-wide uppercase">{label}</span>
             </button>
           )
         })}
