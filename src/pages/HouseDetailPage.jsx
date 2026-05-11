@@ -322,7 +322,7 @@ export default function HouseDetailPage() {
       </div>
 
       {/* Bottom action bar - fixed on mobile above tab bar, inline on desktop */}
-      <div className="fixed md:static bottom-0 left-0 right-0 bg-stone-950/95 md:bg-transparent backdrop-blur-md md:backdrop-blur-none border-t border-stone-800 md:border-t-0 px-4 pt-3 md:pb-6 md:mt-4" style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 2.6rem)" }}>
+      <div className="fixed md:static bottom-0 left-0 right-0 bg-stone-950/95 md:bg-transparent backdrop-blur-md md:backdrop-blur-none border-t border-stone-800 md:border-t-0 px-4 pt-3 md:pb-6 md:mt-4" style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 2.25rem)" }}>
         <div className="max-w-lg mx-auto space-y-2">
           {/* Row 1: primary actions */}
           <div className="flex gap-2">
