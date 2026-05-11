@@ -208,7 +208,7 @@ export default function HouseDetailPage() {
         </div>
       </div>
 
-      <div className="px-4 py-5 space-y-6 pb-52 md:pb-36">
+      <div className="px-4 py-5 space-y-6 pb-52 md:pb-4">
         {/* Images */}
         <ImageGallery images={house.imageUrls} floorPlanUrl={house.floorPlanUrl} />
 
