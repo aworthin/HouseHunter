@@ -48,7 +48,11 @@ export default function HouseDetailPage() {
 
   const house = houses.find(h => h.id === id)
 
-  useEffect(() => { window.scrollTo(0, 0) }, [id])
+  useEffect(() => {
+    const el = document.getElementById('main-scroll')
+    if (el) el.scrollTop = 0
+    else window.scrollTo(0, 0)
+  }, [id])
 
   if (!house) return (
     <div className="min-h-dvh bg-stone-950 flex items-center justify-center">

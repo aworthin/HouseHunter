@@ -80,8 +80,8 @@ function SortableRankItem({ house, rank, isHighlighted }) {
 export default function RankingPage() {
   const navigate = useNavigate()
   const location = useLocation()
-  const { ranked: toured } = useHouses()
   const highlightId = location.state?.highlightId
+  const { ranked: toured } = useHouses()
 
   const [list, setList] = useState(toured)
   const [activeId, setActiveId] = useState(null)

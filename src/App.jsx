@@ -191,8 +191,14 @@ export default function App() {
   // Derived lists
   const byStatus = (s) => houses.filter(h => h.status === s)
   const ranked = byStatus(STATUS.TOURED).sort((a, b) => (a.rank ?? 999) - (b.rank ?? 999))
-  const readyToTour = byStatus(STATUS.READY_TO_TOUR)
-  const reviewed = byStatus(STATUS.REVIEWED)
+  // Include reviewed houses with tourStartedAt in readyToTour (tour in progress)
+  const readyToTour = houses.filter(h =>
+    h.status === STATUS.READY_TO_TOUR ||
+    (h.status === STATUS.REVIEWED && h.tourStartedAt && !h.tourCompletedAt)
+  )
+  const reviewed = houses.filter(h =>
+    h.status === STATUS.REVIEWED && (!h.tourStartedAt || h.tourCompletedAt)
+  )
   const newHouses = byStatus(STATUS.NEW)
   const rejected = byStatus(STATUS.REJECTED)
   const sold = byStatus(STATUS.SOLD)

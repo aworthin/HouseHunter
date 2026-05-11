@@ -169,7 +169,7 @@ export default function MainPage() {
         </div>
       </div>
 
-      <div className="px-4 pb-28 space-y-8 pt-4 md:pb-8">
+      <div className="px-4 pb-24 space-y-8 pt-4 md:pb-8">
         {/* Ranked / Toured */}
         <SectionHeader icon={Trophy} label="Ranked Houses" count={displayRanked.length} color="text-amber-500" houses={displayRanked}>
           {displayRanked.length === 0 ? (
