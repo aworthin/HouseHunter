@@ -208,7 +208,7 @@ export default function HouseDetailPage() {
         </div>
       </div>
 
-      <div className="px-4 py-5 space-y-6 pb-40">
+      <div className="px-4 py-5 space-y-6 pb-52">
         {/* Images */}
         <ImageGallery images={house.imageUrls} floorPlanUrl={house.floorPlanUrl} />
 
@@ -322,7 +322,7 @@ export default function HouseDetailPage() {
       </div>
 
       {/* Bottom action bar */}
-      <div className="fixed bottom-0 left-0 right-0 bg-stone-950/95 backdrop-blur-md border-t border-stone-800 px-4 pt-3 safe-bottom">
+      <div className="fixed left-0 right-0 bg-stone-950/95 backdrop-blur-md border-t border-stone-800 px-4 pt-3 pb-3" style={{ bottom: "calc(env(safe-area-inset-bottom) + 2.75rem)" }}>
         <div className="max-w-lg mx-auto space-y-2">
           {/* Row 1: primary actions */}
           <div className="flex gap-2">
