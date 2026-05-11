@@ -164,9 +164,11 @@ export function subscribeToLatestHistoryId(callback) {
 // ─── Tour ─────────────────────────────────────────────────────────────
 
 export async function startTour(house) {
+  const newStatus = house.status === STATUS.READY_TO_TOUR ? STATUS.READY_TO_TOUR : STATUS.READY_TO_TOUR
   const updates = {
     tourStartedAt: serverTimestamp(),
     tourData: house.tourData || {},
+    status: STATUS.READY_TO_TOUR,
     updatedAt: serverTimestamp(),
   }
   await updateDoc(doc(db, HOUSES_COL, house.id), updates)
@@ -175,7 +177,7 @@ export async function startTour(house) {
     address: house.address,
     event: 'toured',
     fromStatus: house.status,
-    toStatus: house.status,
+    toStatus: STATUS.READY_TO_TOUR,
     note: 'Tour started',
   })
 }

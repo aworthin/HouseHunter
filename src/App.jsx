@@ -96,11 +96,9 @@ export default function App() {
     const unsub = subscribeToHouses((data) => {
       console.timeEnd('[HQ] Firebase connect')
       console.log('[HQ] Houses loaded:', data.length)
-      // Migrate old status values to new system
+      // Migrate old 'pending' status to 'new'
       const migrated = data.map(h => {
         if (h.status === 'pending') return { ...h, status: 'new' }
-        if (h.status === 'toured' && h.tourNotes) return { ...h, status: 'toured' }
-        if (h.status === 'toured') return { ...h, status: 'reviewed' }
         return h
       })
       setHouses(migrated)
@@ -191,14 +189,8 @@ export default function App() {
   // Derived lists
   const byStatus = (s) => houses.filter(h => h.status === s)
   const ranked = byStatus(STATUS.TOURED).sort((a, b) => (a.rank ?? 999) - (b.rank ?? 999))
-  // Include reviewed houses with tourStartedAt in readyToTour (tour in progress)
-  const readyToTour = houses.filter(h =>
-    h.status === STATUS.READY_TO_TOUR ||
-    (h.status === STATUS.REVIEWED && h.tourStartedAt && !h.tourCompletedAt)
-  )
-  const reviewed = houses.filter(h =>
-    h.status === STATUS.REVIEWED && (!h.tourStartedAt || h.tourCompletedAt)
-  )
+  const readyToTour = byStatus(STATUS.READY_TO_TOUR)
+  const reviewed = byStatus(STATUS.REVIEWED)
   const newHouses = byStatus(STATUS.NEW)
   const rejected = byStatus(STATUS.REJECTED)
   const sold = byStatus(STATUS.SOLD)
