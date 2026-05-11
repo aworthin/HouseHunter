@@ -29,7 +29,7 @@ export default function TabBar() {
               className={`flex-1 flex flex-col items-center gap-0.5 pt-1.5 transition-all active:scale-95 ${
                 active ? 'text-amber-500' : 'text-stone-500'
               }`}
-              style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 0.25rem)' }}
+              style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 4px)' }}
             >
               <Icon size={16} />
               <span className="text-[9px] font-medium tracking-wide uppercase">{label}</span>
