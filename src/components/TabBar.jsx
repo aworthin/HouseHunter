@@ -19,16 +19,17 @@ export default function TabBar() {
 
   return (
     <div className="fixed bottom-0 left-0 right-0 z-30 md:hidden bg-stone-950/95 backdrop-blur-md border-t border-stone-800">
-      <div className="flex" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
+      <div className="flex">
         {TABS.map(({ path, label, icon: Icon, match }) => {
           const active = match(pathname)
           return (
             <button
               key={path}
               onClick={() => navigate(path)}
-              className={`flex-1 flex flex-col items-center gap-0.5 pt-1.5 pb-1 transition-all active:scale-95 ${
+              className={`flex-1 flex flex-col items-center gap-0.5 pt-1.5 transition-all active:scale-95 ${
                 active ? 'text-amber-500' : 'text-stone-500'
               }`}
+              style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 0.25rem)' }}
             >
               <Icon size={16} />
               <span className="text-[9px] font-medium tracking-wide uppercase">{label}</span>
