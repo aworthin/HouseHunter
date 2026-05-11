@@ -5,6 +5,7 @@ import { getUserName, setUserName, getLastSeenUlid } from './lib/userPrefs'
 import { User } from './icons'
 import MainPage from './pages/MainPage'
 import ItemsPage from './pages/ItemsPage'
+import ItemRankingPage from './pages/ItemRankingPage'
 import TabBar from './components/TabBar'
 import SidebarNav from './components/SidebarNav'
 import AddHousePage from './pages/AddHousePage'
@@ -223,6 +224,7 @@ export default function App() {
         <Route path="/shortcut-setup" element={<ShortcutSetupPage />} />
         <Route path="/history" element={<HistoryPage />} />
         <Route path="/items" element={<ItemsPage />} />
+        <Route path="/items/ranking" element={<ItemRankingPage />} />
           </Routes>
         </div>
       </div>

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react'
-import { Plus, Edit2, Trash2, ExternalLink, DollarSign, Package, CheckCircle } from '../icons'
+import { Plus, Edit2, Trash2, ExternalLink, DollarSign, Package, CheckCircle, BarChart2 } from '../icons'
+import { useNavigate } from 'react-router-dom'
 import { subscribeToItems, addItem, updateItem, deleteItem } from '../lib/db'
 import {
   ITEM_CATEGORIES, ITEM_STATUS, ITEM_STATUS_LABELS,
@@ -20,6 +21,7 @@ function ItemFormSheet({ item, onSave, onClose }) {
     category: item?.category || ITEM_CATEGORIES[0],
     requestedBy: item?.requestedBy || '',
     status: item?.status || ITEM_STATUS.NEEDED,
+    qty: item?.qty || '1',
   })
   const [saving, setSaving] = useState(false)
 
@@ -150,6 +152,9 @@ function ItemCard({ item, onEdit, onDelete, onStatusChange }) {
 
   return (
     <div className={`card p-3 flex items-start gap-3 ${item.status === ITEM_STATUS.NOT_NEEDED ? 'opacity-50' : ''}`}>
+      {item.rank && item.status === ITEM_STATUS.NEEDED && (
+        <div className="w-7 h-7 rounded-full bg-amber-500 text-stone-950 text-xs font-bold flex items-center justify-center shrink-0">{item.rank}</div>
+      )}
       <div className="flex-1 min-w-0">
         <div className="flex items-start justify-between gap-2 mb-1">
           <p className="text-stone-100 font-medium text-sm">{item.name}</p>
@@ -161,6 +166,7 @@ function ItemCard({ item, onEdit, onDelete, onStatusChange }) {
           {item.brand && <span>{item.brand}{item.model ? ` · ${item.model}` : ''}</span>}
           {item.store && <span>📍 {item.store}</span>}
           {item.requestedBy && <span>👤 {item.requestedBy}</span>}
+          {item.qty && item.qty !== '1' && <span className="text-stone-400">×{item.qty}</span>}
           {price > 0 && <span className="text-amber-400 font-medium">${price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>}
         </div>
         {item.notes && <p className="text-stone-600 text-xs italic line-clamp-1">{item.notes}</p>}
@@ -187,6 +193,7 @@ function ItemCard({ item, onEdit, onDelete, onStatusChange }) {
 
 // ─── Main ItemsPage ───────────────────────────────────────────────────
 export default function ItemsPage() {
+  const navigate = useNavigate()
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
@@ -245,10 +252,17 @@ export default function ItemsPage() {
               {grandTotal > 0 && ` · $${grandTotal.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })} estimated`}
             </p>
           </div>
-          <button onClick={openAdd} className="btn-primary flex items-center gap-2 py-2.5 px-4">
-            <Plus size={18} />
-            <span>Add</span>
-          </button>
+          <div className="flex items-center gap-2">
+            <button onClick={() => navigate('/items/ranking')}
+              className="bg-stone-800 border border-stone-700 text-stone-300 p-2.5 rounded-xl active:scale-95 transition-transform"
+              title="Priority Ranking">
+              <BarChart2 size={18} />
+            </button>
+            <button onClick={openAdd} className="btn-primary flex items-center gap-2 py-2.5 px-4">
+              <Plus size={18} />
+              <span>Add</span>
+            </button>
+          </div>
         </div>
       </div>
 
