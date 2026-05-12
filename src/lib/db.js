@@ -148,6 +148,25 @@ export async function addHistory({ houseId, address, event, fromStatus, toStatus
   return id
 }
 
+export async function getPreviousStatusFromHistory(houseId) {
+  // Query history for this house, find the last status_changed event before sold
+  const q = query(
+    collection(db, HISTORY_COL),
+    where('houseId', '==', houseId),
+    orderBy('id', 'desc'),
+    limit(20)
+  )
+  const snap = await getDocs(q)
+  const events = snap.docs.map(d => d.data())
+  // Find the most recent status_changed event where toStatus is not sold
+  const lastNonSold = events.find(e =>
+    e.event === 'status_changed' &&
+    e.toStatus !== STATUS.SOLD &&
+    e.toStatus != null
+  )
+  return lastNonSold?.toStatus || null
+}
+
 export function subscribeToHistory(callback, limitCount) {
   const q = query(
     collection(db, HISTORY_COL),

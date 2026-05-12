@@ -6,7 +6,7 @@ import {
   Eye, ThumbsDown, Car, Layers, Tag, RefreshCw, Clock
 } from '../icons'
 import { useHouses } from '../App'
-import { deleteHouse, changeStatus, updateHouse, addHistory, STATUS, STATUS_LABELS } from '../lib/db'
+import { deleteHouse, changeStatus, updateHouse, addHistory, getPreviousStatusFromHistory, STATUS, STATUS_LABELS } from '../lib/db'
 import ImageGallery from '../components/ImageGallery'
 import AddressActionSheet from '../components/AddressActionSheet'
 import ConfirmDialog from '../components/ConfirmDialog'
@@ -156,7 +156,9 @@ export default function HouseDetailPage() {
 
       // If house was previously sold but is now active again, restore previous status
       if (house.status === STATUS.SOLD) {
-        const restoreStatus = house.previousStatus || STATUS.NEW
+        const restoreStatus = house.previousStatus ||
+          await getPreviousStatusFromHistory(id) ||
+          STATUS.NEW
         await changeStatus(house, restoreStatus, 'Restored from Sold — back on market on Zillow')
         setRefreshMsg({ type: 'success', text: `Property is back on market! Status restored to "${STATUS_LABELS[restoreStatus]}".` })
         // Continue to update data below
