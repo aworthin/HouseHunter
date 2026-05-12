@@ -130,6 +130,12 @@ function ItemFormSheet({ item, onSave, onClose }) {
           </div>
 
           <div>
+            <label className="label">Qty</label>
+            <input className="input" placeholder="1" value={form.qty}
+              onChange={e => set('qty', e.target.value)} inputMode="numeric" />
+          </div>
+
+          <div>
             <label className="label">Link</label>
             <input className="input" placeholder="https://..." value={form.link}
               onChange={e => set('link', e.target.value)} type="url" inputMode="url" />
