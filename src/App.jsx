@@ -146,7 +146,7 @@ export default function App() {
           (data.homeStatus && ['RECENTLY_SOLD', 'SOLD'].includes(data.homeStatus))
 
         if (isSold) {
-          await markZillowChecked(house.id, true)
+          await markZillowChecked(house.id, { previousStatus: house.status })
           await addHistory({
             houseId: house.id,
             address: house.address,

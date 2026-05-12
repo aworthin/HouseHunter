@@ -70,6 +70,10 @@ export async function changeStatus(house, newStatus, note) {
     status: newStatus,
     updatedAt: serverTimestamp(),
     ...(newStatus !== STATUS.TOURED && oldStatus === STATUS.TOURED ? { rank: null } : {}),
+    // Save previous status when marking sold so we can restore it later
+    ...(newStatus === STATUS.SOLD ? { previousStatus: oldStatus } : {}),
+    // Clear previousStatus when restoring from sold
+    ...(oldStatus === STATUS.SOLD && newStatus !== STATUS.SOLD ? { previousStatus: null } : {}),
   })
   await addHistory({
     houseId: house.id,
@@ -110,6 +114,7 @@ export async function updateRanks(rankedIds) {
 export async function markZillowChecked(id, isSold) {
   const updates = { zillowLastChecked: serverTimestamp() }
   if (isSold) {
+    updates.previousStatus = isSold.previousStatus || null
     updates.status = STATUS.SOLD
     updates.updatedAt = serverTimestamp()
     updates.soldDetectedAt = serverTimestamp()

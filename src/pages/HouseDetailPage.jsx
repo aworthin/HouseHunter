@@ -143,13 +143,23 @@ export default function HouseDetailPage() {
       const data = await res.json()
 
       if (data._sold) {
-        await changeStatus(house, STATUS.SOLD, 'Marked sold via Zillow refresh')
+        if (house.status !== STATUS.SOLD) {
+          await changeStatus(house, STATUS.SOLD, 'Marked sold via Zillow refresh')
+        }
         setRefreshMsg({ type: 'sold', text: 'This property has been sold on Zillow. Status updated to Sold.' })
         return
       }
       if (data._offMarket) {
         setRefreshMsg({ type: 'warning', text: `Property is off-market (${data.homeStatus}). Data not updated.` })
         return
+      }
+
+      // If house was previously sold but is now active again, restore previous status
+      if (house.status === STATUS.SOLD) {
+        const restoreStatus = house.previousStatus || STATUS.NEW
+        await changeStatus(house, restoreStatus, 'Restored from Sold — back on market on Zillow')
+        setRefreshMsg({ type: 'success', text: `Property is back on market! Status restored to "${STATUS_LABELS[restoreStatus]}".` })
+        // Continue to update data below
       }
       if (data.error && !data._partial) {
         setRefreshMsg({ type: 'error', text: `Could not reach Zillow: ${data.error}` })
